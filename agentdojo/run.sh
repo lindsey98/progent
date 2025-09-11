@@ -4,16 +4,21 @@ log_dir="logs/no-update"
 mkdir -p $log_dir
 
 model="gpt-4o-2024-08-06"
-# model="o3-mini-2025-01-31"
 # model="claude-3-7-sonnet-20250219"
+# model="facebook/Meta-SecAlign-70B" # vllm serve meta-llama/Llama-3.3-70B-Instruct   --tokenizer facebook/Meta-SecAlign-70B   --tensor-parallel-size 4   --enable-lora   --max-lora-rank 64   --lora-modules facebook/Meta-SecAlign-70B=facebook/Meta-SecAlign-70B   --gpu_memory_utilization 0.95
+# model="claude-sonnet-4-20250514"
+# model="gpt-4.1-2025-04-14"
+# model="gemini-2.5-flash"
 
 export SECAGENT_POLICY_MODEL="gpt-4o-2024-08-06"
-# export SECAGENT_POLICY_MODEL="o3-mini-2025-01-31"
-# export SECAGENT_POLICY_MODEL="claude-3-7-sonnet-20250219"
-# export SECAGENT_POLICY_MODEL="o3-2025-04-03"
-# export SECAGENT_POLICY_MODEL="gpt-4o-mini-2024-07-18"
-# export SECAGENT_POLICY_MODEL="meta-llama/Llama-3.3-70B-Instruct" # vllm serve meta-llama/Llama-3.3-70B-Instruct -tp 2 --gpu_memory_utilization 0.98 --max_model_len 32768 --disable-log-requests
-# export SECAGENT_POLICY_MODEL="Qwen/Qwen2.5-72B-Instruct" # vllm serve Qwen/Qwen2.5-72B-Instruct -tp 2 --gpu_memory_utilization 0.982 --max_model_len 15000 --disable-log-requests
+# export SECAGENT_POLICY_MODEL="claude-sonnet-4-20250514"
+# export SECAGENT_POLICY_MODEL="gpt-4.1-2025-04-14"
+# export SECAGENT_POLICY_MODEL="gemini-2.5-flash"
+
+# manual policies
+export SECAGENT_GENERATE="False"
+
+# auto policies
 # export SECAGENT_UPDATE="True"
 # export SECAGENT_IGNORE_UPDATE_ERROR="True"
 

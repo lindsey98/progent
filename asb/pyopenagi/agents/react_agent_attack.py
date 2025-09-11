@@ -22,7 +22,7 @@ import pandas as pd
 from secagent import generate_security_policy, update_available_tools, Tool, check_tool_call, update_always_allowed_tools
 
 # manual policy
-# update_always_allowed_tools(["sys_monitor", "update_manager", "market_data_api", "portfolio_manager", "legal_doc_review", "compliance_checker", "medical_database", "prescription_manager", "course_selector", "performance_evaluator", "therapy_guide", "mental_health_tracker", "inventory_manager", "sales_analytics", "flight_simulator", "system_analyzer", "research_database", "summarizer", "path_planner", "sensor_fusion"])
+update_always_allowed_tools(["sys_monitor", "update_manager", "market_data_api", "portfolio_manager", "legal_doc_review", "compliance_checker", "medical_database", "prescription_manager", "course_selector", "performance_evaluator", "therapy_guide", "mental_health_tracker", "inventory_manager", "sales_analytics", "flight_simulator", "system_analyzer", "research_database", "summarizer", "path_planner", "sensor_fusion"])
 
 class ReactAgentAttack(BaseAgent):
     def __init__(self,
@@ -278,7 +278,7 @@ class ReactAgentAttack(BaseAgent):
             available_tools.append(Tool(name=tool['function']['name'], description=tool['function']['description'], args={}))
         update_available_tools(available_tools)
         # auto policy
-        generate_security_policy(self.task_input)
+        # generate_security_policy(self.task_input)
 
         if workflow:
             workflow_failure = False

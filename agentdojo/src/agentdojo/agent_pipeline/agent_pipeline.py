@@ -17,6 +17,7 @@ from agentdojo.agent_pipeline.llms.cohere_llm import CohereLLM
 from agentdojo.agent_pipeline.llms.google_llm import GoogleLLM
 from agentdojo.agent_pipeline.llms.openai_llm import OpenAILLM, OpenAILLMToolFilter
 from agentdojo.agent_pipeline.llms.prompting_llm import PromptingLLM
+from agentdojo.agent_pipeline.llms.secalign_local_llm import LocalLLM
 from agentdojo.agent_pipeline.pi_detector import TransformersBasedPIDetector
 from agentdojo.agent_pipeline.tool_execution import (
     ToolsExecutionLoop,
@@ -70,6 +71,12 @@ def get_llm(provider: str, model: str) -> BasePipelineElement:
             base_url="https://api.together.xyz/v1",
         )
         llm = PromptingLLM(client, model)
+    elif provider == "secalign-prompting":
+        client = openai.OpenAI(
+            api_key="EMPTY",
+            base_url="http://localhost:8000/v1",
+        )
+        llm = LocalLLM(client, model)
     elif provider == "cohere":
         client = cohere.Client()
         llm = CohereLLM(client, model)

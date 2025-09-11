@@ -37,7 +37,7 @@ from agentdojo.default_suites.v1.tools.email_client import (
 )
 from agentdojo.functions_runtime import TaskEnvironment, make_function
 from agentdojo.task_suite.task_suite import TaskSuite
-from secagent import apply_secure_tool_wrapper, update_always_allowed_tools
+from secagent import apply_secure_tool_wrapper, update_always_allowed_tools, update_security_policy
 import os
 
 
@@ -91,6 +91,7 @@ deepdiff_paths_to_exclude = [
 WorkspaceDeepDiff = partial(DeepDiff, exclude_paths=deepdiff_paths_to_exclude)
 
 suite = os.getenv('SECAGENT_SUITE', None)
+generate_policy = os.getenv('SECAGENT_GENERATE', "True").lower() == "true"
 if suite != "workspace":
     task_suite = TaskSuite[WorkspaceEnvironment]("workspace", WorkspaceEnvironment, [make_function(tool) for tool in TOOLS])
 else:
@@ -111,3 +112,46 @@ else:
         "list_files",
         "search_files"
     ])
+    # manual policies
+    if not generate_policy:
+        trusted_email_list = ['john.mitchell@gmail.com', 'david.smith@bluesparrowtech.com', 'david.lee@bluesparrowtech.com', 'linda.green@luesparrowtech.com', 'mark.roberts@luesparrowtech.com',
+                              'sarah.connor@gmail.com', 'emma.johnson@bluesparrowtech.com', 'martha.raynolds@gmail.com', 'mark.davies@hotmail.com', 'sarah.baker@gmail.com',
+                              'john.doe@clientcorp.com', 'maria.garcia@bluesparrowtech.com', 'john.doe@gmail.com',
+                              'james.miller@yahoo.com']
+        policies = {
+            "get_unread_emails":                  [(1, 0, {}, 0)],
+            "get_sent_emails":                    [(1, 0, {}, 0)],
+            "get_received_emails":                [(1, 0, {}, 0)],
+            "get_draft_emails":                   [(1, 0, {}, 0)],
+            "search_emails":                      [(1, 0, {}, 0)],
+            "search_contacts_by_name":            [(1, 0, {}, 0)],
+            "search_contacts_by_email":           [(1, 0, {}, 0)],
+            "get_current_day":                    [(1, 0, {}, 0)],
+            "search_calendar_events":             [(1, 0, {}, 0)],
+            "get_day_calendar_events":            [(1, 0, {}, 0)],
+            "search_files_by_filename":           [(1, 0, {}, 0)],
+            "get_file_by_id":                     [(1, 0, {}, 0)],
+            "list_files":                         [(1, 0, {}, 0)],
+            "search_files":                       [(1, 0, {}, 0)],
+            "send_email":                         [(1, 0, {
+                "recipients": {'items': {'enum': trusted_email_list}}
+            }, 0)],
+            "create_calendar_event":              [(1, 0, {
+                "participants": {
+                    "anyOf": [
+                        {'items': {'enum': trusted_email_list}},
+                        {'type': 'null'}
+                    ]
+                }
+            }, 0)],
+            "reschedule_calendar_event":          [(1, 0, {}, 0)],
+            "add_calendar_event_participants":    [(1, 0, {
+                "participants": {'items': {'enum': trusted_email_list}}
+            }, 0)],
+            "append_to_file":                     [(1, 0, {}, 0)],
+            "create_file":                        [(1, 0, {}, 0)],
+            "share_file":                         [(1, 0, {
+                "emails": {'enum': trusted_email_list}
+            }, 0)],
+        }
+        update_security_policy(policies)

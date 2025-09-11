@@ -96,7 +96,7 @@ def show_results(suite_name: str, results: SuiteResults, show_security_results: 
 @click.option(
     "--model",
     default="gpt-4o-2024-05-13",
-    type=click.Choice([value for value in ModelsEnum]),
+    type=click.Choice([str(value) for value in ModelsEnum]),
     help="The language model to benchmark. Defaults to `gpt-4o-2024-05-13`.",
 )
 @click.option(

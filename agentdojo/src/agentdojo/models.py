@@ -6,7 +6,7 @@ class ModelsEnum(StrEnum):
 
     GPT_4O_2024_05_13 = "gpt-4o-2024-05-13"
     GPT_4O_2024_08_06 = "gpt-4o-2024-08-06"
-    O3_MINI = "o3-mini-2025-01-31"
+    GPT_4_1_2025_04_14 = "gpt-4.1-2025-04-14"
     """GPT-4o"""
     GPT_4O_MINI_2024_07_18 = "gpt-4o-mini-2024-07-18"
     """GPT-4o Mini"""
@@ -26,6 +26,8 @@ class ModelsEnum(StrEnum):
     """Claude 3.5 Sonnet October"""
     CLAUDE_3_7_SONNET_20250219 = "claude-3-7-sonnet-20250219"
     """Claude 3.7 Sonnet"""
+    CLAUDE_4_SONNET_20250514 = "claude-sonnet-4-20250514"
+    """Claude 4 Sonnet"""
     CLAUDE_3_HAIKU_20240307 = "claude-3-haiku-20240307"
     """Claude 3 Haiku"""
     COMMAND_R_PLUS = "command-r-plus"
@@ -36,6 +38,8 @@ class ModelsEnum(StrEnum):
     """MistralAI Mixtral 8x7B Instruct v0.1"""
     LLAMA_3 = "meta-llama/Llama-3-70b-chat-hf"
     """Llama 3"""
+    META_SECALIGN_70B = "facebook/Meta-SecAlign-70B"
+    """Meta SecAlign 70B"""
     GEMINI_1_5_PRO_002 = "gemini-1.5-pro-002"
     """Gemini 1.5 Pro 002"""
     GEMINI_1_5_PRO_001 = "gemini-1.5-pro-001"
@@ -48,11 +52,13 @@ class ModelsEnum(StrEnum):
     """Gemini 2.0 Flash Exp"""
     GEMINI_2_0_FLASH_001 = "gemini-2.0-flash-001"
     """Gemini 2.0 Flash 001"""
+    GEMINI_2_5_FLASH = "gemini-2.5-flash"
+    """Gemini 2.5 Flash"""
 
 MODEL_PROVIDERS = {
     ModelsEnum.GPT_4O_2024_05_13: "openai",
     ModelsEnum.GPT_4O_2024_08_06: "openai",
-    ModelsEnum.O3_MINI:"openai",
+    ModelsEnum.GPT_4_1_2025_04_14:"openai",
     ModelsEnum.GPT_4O_MINI_2024_07_18: "openai",
     ModelsEnum.GPT_3_5_TURBO_0125: "openai",
     ModelsEnum.GPT_4_0125_PREVIEW: "openai",
@@ -62,22 +68,25 @@ MODEL_PROVIDERS = {
     ModelsEnum.CLAUDE_3_5_SONNET_20240620: "anthropic",
     ModelsEnum.CLAUDE_3_5_SONNET_20241022: "anthropic",
     ModelsEnum.CLAUDE_3_7_SONNET_20250219: "anthropic",
+    ModelsEnum.CLAUDE_4_SONNET_20250514: "anthropic",
     ModelsEnum.CLAUDE_3_HAIKU_20240307: "anthropic",
     ModelsEnum.COMMAND_R_PLUS: "cohere",
     ModelsEnum.COMMAND_R: "cohere",
     ModelsEnum.MISTRALAI_MIXTRAL_8X7B_INSTRUCT_V0_1: "together",
     ModelsEnum.LLAMA_3: "together-prompting",
+    ModelsEnum.META_SECALIGN_70B: "secalign-prompting",
     ModelsEnum.GEMINI_1_5_PRO_001: "google",
     ModelsEnum.GEMINI_1_5_PRO_002: "google",
     ModelsEnum.GEMINI_1_5_FLASH_001: "google",
     ModelsEnum.GEMINI_1_5_FLASH_002: "google",
     ModelsEnum.GEMINI_2_0_FLASH_EXP: "google",
-    ModelsEnum.GEMINI_2_0_FLASH_001: "google"
+    ModelsEnum.GEMINI_2_0_FLASH_001: "google",
+    ModelsEnum.GEMINI_2_5_FLASH: "google",
 }
 
 
 MODEL_NAMES = {
-    "o3-mini-2025-01-31": "O3",
+    "gpt-4.1-2025-04-14": "GPT-4.1",
     "gpt-4o-2024-08-06": "GPT-4",
     "gpt-4o-2024-05-13": "GPT-4",
     "gpt-4o-mini-2024-07-18": "GPT-4",
@@ -89,15 +98,18 @@ MODEL_NAMES = {
     "claude-3-5-sonnet-20240620": "Claude",
     "claude-3-5-sonnet-20241022": "Claude",
     "claude-3-7-sonnet-20250219": "Claude",
+    "claude-sonnet-4-20250514": "Claude",
     "claude-3-haiku-20240307": "Claude",
     "command-r-plus": "Command R+",
     "command-r": "Command R",
     "mistralai/Mixtral-8x7B-Instruct-v0.1": "Mixtral",
     "meta-llama/Llama-3-70b-chat-hf": "AI assistant",
+    "facebook/Meta-SecAlign-70B": "AI assistant",
     "gemini-1.5-pro-002": "AI model developed by Google",
     "gemini-1.5-pro-001": "AI model developed by Google",
     "gemini-1.5-flash-002": "AI model developed by Google",
     "gemini-1.5-flash-001": "AI model developed by Google",
     "gemini-2.0-flash-exp": "AI model developed by Google",
     "gemini-2.0-flash-001": "AI model developed by Google",
+    "gemini-2.5-flash": "AI model developed by Google",
 }

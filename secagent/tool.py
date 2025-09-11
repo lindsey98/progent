@@ -20,7 +20,9 @@ except:
 
 
 available_tools = []
-security_policy = None  # {"tool_name": [(priority (1-100), effect (0: allow; 1: forbid), condition, fallback (0: return msg; 1: terminate; 2: user confirm))]}
+# always_blocked_tools = set()
+# always_allowed_tools = set()
+security_policy = None  # {"tool_name": [(priority, effect (0: allow; 1: forbid), condition, fallback (0: return msg; 1: terminate; 2: user confirm))]}
 init_user_query = None
 
 # policy_model = "gpt-4o-2024-08-06"
@@ -33,6 +35,7 @@ init_user_query = None
 policy_model = os.getenv("SECAGENT_POLICY_MODEL", "gpt-4o-2024-08-06")
 print(f"Policy Model: {policy_model}", file=sys.stderr)
 ignore_update_error = os.getenv("SECAGENT_IGNORE_UPDATE_ERROR", "False").lower() == "true"
+generate_policy = os.getenv('SECAGENT_GENERATE', "True").lower() == "true"
 
 
 class Tool(TypedDict):
@@ -51,12 +54,12 @@ def get_available_tools() -> List[Tool]:
     return available_tools
 
 
-def sort_security_policy() -> None:
+def sort_policy() -> None:
     global security_policy
     if security_policy is None:
         return
     for tool, policies in security_policy.items():
-        policies.sort(key=lambda x: (x[0], -x[1]))
+        security_policy[tool] = sorted(policies, key=lambda x: (x[0], -x[1]))
 
 
 def update_always_allowed_tools(tools, allow_all_no_arg_tools: bool = False) -> None:
@@ -71,7 +74,7 @@ def update_always_allowed_tools(tools, allow_all_no_arg_tools: bool = False) -> 
             security_policy[tool] = [(1, 0, {}, 0)]
         else:
             security_policy[tool].insert(0, (1, 0, {}, 0))
-    sort_security_policy()
+    sort_policy()
     print(f"always allowed tools updated: {always_allowed_tools}", file=sys.stderr)
 
 
@@ -85,7 +88,7 @@ def update_always_blocked_tools(tools) -> None:
             security_policy[tool] = [(1, 1, {}, 0)]
         else:
             security_policy[tool].insert(0, (1, 1, {}, 0))
-    sort_security_policy()
+    sort_policy()
     print(f"always blocked tools updated: {always_blocked_tools}", file=sys.stderr)
 
 
@@ -104,8 +107,20 @@ def get_current_config() -> Dict:
 def update_security_policy(policy: dict) -> None:
     global security_policy
     security_policy = policy
-    sort_security_policy()
+    sort_policy()
     print(f"security policy updated: {security_policy}", file=sys.stderr)
+
+
+def security_policy_type_check() -> None:
+    global security_policy
+    if security_policy is None:
+        return
+
+    available_tools_dict = {}
+    for tool in available_tools:
+        available_tools_dict[tool["name"]] = tool["args"]
+
+    # check()
 
 
 def get_generated_policy() -> List:
@@ -162,28 +177,21 @@ def api_request(sys_prompt, user_prompt, temperature=0.0) -> None:
         print("[Policy] tokens (completion, prompt): ", message.usage.output_tokens, message.usage.input_tokens,
               "total (completion, prompt): ", total_completion_tokens, total_prompt_tokens, file=sys.stderr)
         return message.content[0].text
-    from openai import OpenAI
-    if policy_model == "o3-2025-04-03":
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY_O3"))
-        response = client.responses.create(
-            input=[
-                {
-                    "role": "developer",
-                    "content": sys_prompt,
-                },
-                {
-                    "role": "user",
-                    "content": user_prompt,
-                }
-            ],
-            model=policy_model,
+    if policy_model.startswith("gemini"):
+        import vertexai.generative_models as genai
+        vertexai_model = genai.GenerativeModel(
+            model_name=policy_model,
+            system_instruction=genai.Part.from_text(text=sys_prompt),
         )
-        # print(response)
-        total_completion_tokens += response.usage.output_tokens
-        total_prompt_tokens += response.usage.input_tokens
-        print("[Policy] tokens (completion, prompt): ", response.usage.output_tokens, response.usage.input_tokens,
-              "total (completion, prompt): ", total_completion_tokens, total_prompt_tokens, file=sys.stderr)
-        return response.output_text
+        response = vertexai_model.generate_content(
+            [genai.Content(
+                role="user",
+                parts=[genai.Part.from_text(user_prompt)],
+            )],
+            generation_config=genai.GenerationConfig(temperature=temperature),
+        )
+        return response.text
+    from openai import OpenAI
     if policy_model.startswith("meta-llama/") or policy_model.startswith("Qwen/"):
         client = OpenAI(base_url="http://127.0.0.1:8000/v1", api_key="EMPTY")
     else:
@@ -264,7 +272,7 @@ Output an array of the restrictions in JSON format."""
 def get_SYS_PROMPT() -> str:
     sys_prompt = SYS_PROMPT
     output_formater = ""
-    if policy_model.startswith("o1") or policy_model.startswith("o3") or policy_model.startswith("meta-llama/") or policy_model.startswith("Qwen/"):
+    if policy_model.startswith("o1") or policy_model.startswith("o3") or policy_model.startswith("gpt-4.1") or policy_model.startswith("gemini") or policy_model.startswith("meta-llama/") or policy_model.startswith("Qwen/"):
         output_formater = "\nOutput format: ```json [{\"name\": tool_name, \"args\": restrictions}, ...] ```"
     if policy_model.startswith("claude"):
         sys_prompt = sys_prompt[:-1]
@@ -316,13 +324,15 @@ def get_SYS_PROMPT_2() -> str:
     output_formater = ""
     if policy_model.startswith("o1") or policy_model.startswith("o3"):
         output_formater = "\nThe policy should be in JSON format: ```json [{\"name\": tool_name, \"args\": restrictions}, ...] ```"
+    if policy_model.startswith("gpt-4.1"):
+        output_formater = "\nThe policy should be in JSON format including the json code block: ```json [{\"name\": tool_name, \"args\": restrictions}, ...] ```"
     if policy_model.startswith("claude"):
         sys_prompt = sys_prompt[:-1]
         output_formater = " with json block."
     if policy_model.startswith("gpt-4o-mini"):
         sys_prompt = sys_prompt[:-1]
         output_formater = " with json block. It should be an array of dictionaries like {\"name\": tool_name, \"args\": restrictions}."
-    if policy_model.startswith("meta-llama/") or policy_model.startswith("Qwen/"):
+    if policy_model.startswith("gemini") or policy_model.startswith("meta-llama/") or policy_model.startswith("Qwen/"):
         sys_prompt = sys_prompt[:-1]
         output_formater = " with json code block. It should be an array of dictionaries like {\"name\": tool_name, \"args\": restrictions}."
     return sys_prompt+output_formater
@@ -333,6 +343,9 @@ def generate_security_policy(query: str, manual_check=False) -> None:
     temperature = 0.0
     global init_user_query
     init_user_query = query
+    if not generate_policy:
+        print("SECAGENT_GENERATE is set to False, skip generating security policy.")
+        return
     content = "TOOLS: "+json.dumps(get_available_tools())+"\nUSER_QUERY: "+query
     while True:
         try:
@@ -374,6 +387,9 @@ def decide_whether_to_update(tool_call_param) -> bool:
     while True:
         try:
             res = api_request(SYS_PROMPT_UPDATE, content, temperature)
+            # with open("tmp_output.txt", "a") as f:
+            #     f.write(content + "\n")
+            #     f.write(res + "\n")
             return res.strip().lower().startswith("yes")
         except Exception as e:
             counter += 1
@@ -383,6 +399,9 @@ def decide_whether_to_update(tool_call_param) -> bool:
 
 
 def generate_update_security_policy(tool_call_param, tool_call_result, manual_check=True) -> None:
+    if not generate_policy:
+        print("SECAGENT_GENERATE is set to False, skip generating security policy.")
+        return
     if not decide_whether_to_update(tool_call_param):
         return
     counter = 0
@@ -445,7 +464,60 @@ def check_arg(arg_name, value, restriction) -> None:
         raise NotImplementedError(f"Unsupported restriction type: {type(restriction)}")
 
 
+def _check_tool_call(tool_name, kwargs, policies):
+    need_update_policies = None
+    for policy in policies:
+        if len(policy) == 4:
+            priority, effect, policy, fallback = policy
+        else:
+            priority, effect, policy, fallback, need_update_policies = policy
+        if effect == 0:
+            flag = True
+            try:
+                for arg_name, restriction in policy.items():
+                    if arg_name in kwargs:
+                        value = kwargs[arg_name]
+                        check_arg(arg_name, value, restriction)
+            except Exception as e:
+                flag = False
+                if priority == 100:
+                    if fallback == 0:
+                        raise e
+                    else:
+                        pass
+            if flag:
+                return need_update_policies
+        elif effect == 1:
+            try:
+                for arg_name, restriction in policy.items():
+                    if arg_name in kwargs:
+                        value = kwargs[arg_name]
+                        check_arg(arg_name, value, restriction)
+            except:
+                continue
+            if fallback == 0:
+                raise ValidationError(f"The tool '{tool_name}' is not allowed.")
+            elif fallback == 1:
+                sys.exit()
+            elif fallback == 2:
+                print(f"The agent wants to call {tool_name} with args {kwargs}.\nDo you want to allow it?[y/N]", file=sys.stderr, end='', flush=True)
+                if input().strip().lower() != "y":
+                    raise ValidationError(f"The tool call is discarded by the user.", file=sys.stderr)
+                return need_update_policies
+    if fallback == 0:
+        raise ValidationError(f"The tool '{tool_name}' is not allowed.")
+    elif fallback == 1:
+        sys.exit()
+    elif fallback == 2:
+        print(f"The agent wants to call {tool_name} with args {kwargs}.\nDo you want to allow it?[y/N]", file=sys.stderr, end='', flush=True)
+        if input().strip().lower() != "y":
+            raise ValidationError(f"The tool call is discarded by the user.", file=sys.stderr)
+        return need_update_policies
+    return need_update_policies
+
+
 def check_tool_call(tool_name, kwargs) -> None:
+    global security_policy
     if security_policy is None:
         print("Warning: security policy is not set.", file=sys.stderr)
         return
@@ -455,49 +527,11 @@ def check_tool_call(tool_name, kwargs) -> None:
             raise ValidationError(f"The tool '{tool_name}' is not allowed.")
         if len(policies) == 0:
             return
-        for priority, effect, policy, fallback in policies:
-            if effect == 0:
-                flag = True
-                try:
-                    for arg_name, restriction in policy.items():
-                        if arg_name in kwargs:
-                            value = kwargs[arg_name]
-                            check_arg(arg_name, value, restriction)
-                except Exception as e:
-                    flag = False
-                    if priority == 100:
-                        if fallback == 0:
-                            raise e
-                        else:
-                            pass
-                if flag:
-                    return
-            elif effect == 1:
-                try:
-                    for arg_name, restriction in policy.items():
-                        if arg_name in kwargs:
-                            value = kwargs[arg_name]
-                            check_arg(arg_name, value, restriction)
-                except:
-                    pass
-                if fallback == 0:
-                    raise ValidationError(f"The tool '{tool_name}' is not allowed.")
-                elif fallback == 1:
-                    sys.exit()
-                elif fallback == 2:
-                    print(f"The agent wants to call {tool_name} with args {kwargs}.\nDo you want to allow it?[y/N]", file=sys.stderr, end='', flush=True)
-                    if input().strip().lower() != "y":
-                        raise ValidationError(f"The tool call is discarded by the user.", file=sys.stderr)
-                    return
-        if fallback == 0:
-            raise ValidationError(f"The tool '{tool_name}' is not allowed.")
-        elif fallback == 1:
-            sys.exit()
-        elif fallback == 2:
-            print(f"The agent wants to call {tool_name} with args {kwargs}.\nDo you want to allow it?[y/N]", file=sys.stderr, end='', flush=True)
-            if input().strip().lower() != "y":
-                raise ValidationError(f"The tool call is discarded by the user.", file=sys.stderr)
-            return
+        need_update_policies = _check_tool_call(tool_name, kwargs, policies)
+        if need_update_policies:
+            for tool, policies in need_update_policies.items():
+                security_policy[tool] = policies
+            sort_policy()
     except Exception as e:
         raise ValidationError(f"{e}. Please try other tools or arguments and continue to finish the user task: {init_user_query}.")
 
