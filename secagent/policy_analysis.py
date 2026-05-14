@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from z3 import *
-from role_analyzer import regex_to_z3_expr
+from .role_analyzer import regex_to_z3_expr
 import sre_parse
 
 # Define a global Z3 datatype for null.
@@ -316,12 +316,16 @@ def solve_schema(schema):
                 var_list.append(Const('x', aw))
 
     for var in var_list:
-        cons = build_constraints(var, schema)
-        s = Solver()
-        s.add(cons)
-        if s.check() == sat:
-            model = s.model()
-            return model, var
+        try:
+            cons = build_constraints(var, schema)
+            s = Solver()
+            s.add(cons)
+            s.set("timeout", 5000)
+            if s.check() == sat:
+                model = s.model()
+                return model, var
+        except Exception as e:
+            pass
     return None, var
 
 
@@ -348,6 +352,77 @@ def security_policy_analysis(security_policy):
                             if model:
                                 warnings.append(f"Policy Warning: {restriction_1} and {restriction_2} overlap. Possible value: {model[var]}.")
     return warnings
+
+
+def security_policy_subset_check(ori_policy, new_policy):
+    ori_policy_filtered = {tool: [p for p in policies if p[0] == 100] for tool, policies in ori_policy.items()}
+    new_policy_filtered = {tool: [p for p in policies if p[0] == 100] for tool, policies in new_policy.items()}
+    # if tool: [], [] is empty list, delete it.
+    ori_policy_filtered = {tool: policies for tool, policies in ori_policy_filtered.items() if len(policies) > 0}
+    new_policy_filtered = {tool: policies for tool, policies in new_policy_filtered.items() if len(policies) > 0}
+    print(ori_policy_filtered, new_policy_filtered, file=sys.stderr)
+    for tool, new_policies in new_policy_filtered.items():
+        if tool not in ori_policy_filtered:
+            return False
+    for tool, new_policies in new_policy_filtered.items():
+        ori_policies = ori_policy_filtered[tool]
+        print(ori_policies, new_policies, file=sys.stderr)
+        for arg_name, restriction_1 in ori_policies[0][2].items():
+            if arg_name not in new_policies[0][2]:
+                return False
+            restriction_2 = new_policies[0][2][arg_name]
+            print(restriction_1, restriction_2, file=sys.stderr)
+            if isinstance(restriction_1, dict) and isinstance(restriction_2, dict):  # json schema
+                schema = {
+                    "allOf": [
+                        {"not": restriction_1},
+                        restriction_2
+                    ]
+                }
+                var_type = None
+                if "type" in restriction_1:
+                    var_type = restriction_1["type"]
+                elif "type" in restriction_2:
+                    var_type = restriction_2["type"]
+                elif "enum" in restriction_1 and len(restriction_1["enum"]) > 0:
+                    first = restriction_1["enum"][0]
+                    if isinstance(first, list):
+                        var_type = "array"
+                    if isinstance(first, str):
+                        var_type = "string"
+                    elif isinstance(first, int):
+                        var_type = "integer"
+                    elif isinstance(first, float):
+                        var_type = "number"
+                    elif isinstance(first, bool):
+                        var_type = "boolean"
+                    elif first is None:
+                        var_type = "null"
+                elif "enum" in restriction_2 and len(restriction_2["enum"]) > 0:
+                    first = restriction_2["enum"][0]
+                    if isinstance(first, list):
+                        var_type = "array"
+                    if isinstance(first, str):
+                        var_type = "string"
+                    elif isinstance(first, int):
+                        var_type = "integer"
+                    elif isinstance(first, float):
+                        var_type = "number"
+                    elif isinstance(first, bool):
+                        var_type = "boolean"
+                    elif first is None:
+                        var_type = "null"
+                if var_type is not None:
+                    schema["type"] = var_type
+                    print("Found type:", var_type, file=sys.stderr)
+                model, var = solve_schema(schema)
+                if model:
+                    print(f"Found counter example: {model[var]}", file=sys.stderr)
+                    return False
+            else:
+                if restriction_1 != restriction_2:
+                    return False
+    return True
 
 
 if __name__ == "__main__":

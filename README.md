@@ -1,12 +1,10 @@
-# Progent: Programmable Privilege Control for LLM Agents
-We provide a modular programming framework for expressing fine-grained privilege control policies to secure LLM agents.
+# Progent: Securing AI Agents with Privilege Control
 Check out our paper [here](https://arxiv.org/abs/2504.11703).
 
 ## Installation
 ```bash
 pip install -e .
 ```
-*The documents and demos will be available soon.*
 
 ## Experiments in the paper
 ### Agentdojo
@@ -31,13 +29,14 @@ python scripts/agent_attack.py --cfg_path config/OPI.yml
 ```
 Check out more in [asb/README.md](asb/README.md)
 
-### EhrAgent
+### Real world agents
 ```bash
-cd ehragent
-conda env create -f environment.yml # install ehragent agentpoison
+cd agentdojo-mcp
+pip install -e . # install agentdojo-mcp
+python mcp_server.py # start the mcp server
 cd ..
 pip install -e . # install progent
-cd ehragent
+cd real-world-agents
+pip install -r requirements.txt
 ./run.sh
 ```
-Check out more in [ehragent/README.md](ehragent/README.md)

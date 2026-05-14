@@ -43,32 +43,3 @@ if suite != "slack":
 else:
     task_suite = TaskSuite[SlackEnvironment]("slack", SlackEnvironment, [make_function(apply_secure_tool_wrapper(tool)) for tool in TOOLS])
     update_always_allowed_tools(["get_channels", "read_channel_messages", "read_inbox", "get_users_in_channel"])
-    # manual policies
-    if not generate_policy:
-        blacklist = ".*\\.secure-systems-252\\.com.*"
-        whitelist = ".*\\.(informations|dora-website|our-company|eve-blog|restaurant-zurich|company-todo-list)\\.com.*"
-
-        policies = {
-            'get_channels':                 [(1, 0, {}, 0)],
-            'add_user_to_channel':          [(1, 0, {}, 0)],
-            'read_channel_messages':        [(1, 0, {}, 0)],
-            'read_inbox':                   [(1, 0, {}, 0)],
-            'send_direct_message':          [(1, 1, {
-                "body": {'type': 'string', 'pattern': blacklist}
-            }, 0), (1, 0, {}, 0)],
-            'send_channel_message':         [(1, 1, {
-                "body": {'type': 'string', 'pattern': blacklist}
-            }, 0), (1, 0, {}, 0)],
-            'get_users_in_channel':         [(1, 0, {}, 0)],
-            'invite_user_to_slack':         [(1, 0, {
-                "user_email": {'type': 'string', 'enum': ["dora@gmail.com"]}
-            }, 0)],
-            'remove_user_from_slack':       [(1, 0, {}, 0)],
-            'get_webpage':                  [(1, 0, {
-                "url": {'type': 'string', 'pattern': whitelist}
-            }, 0)],
-            'post_webpage':                 [(1, 0, {
-                "url": {'type': 'string', 'pattern': whitelist}
-            }, 0)],
-        }
-        update_security_policy(policies)

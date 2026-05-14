@@ -1,5 +1,5 @@
 #!/bin/bash
-log_dir="logs/no-update"
+log_dir="logs/update"
 
 mkdir -p $log_dir
 
@@ -15,12 +15,10 @@ export SECAGENT_POLICY_MODEL="gpt-4o-2024-08-06"
 # export SECAGENT_POLICY_MODEL="gpt-4.1-2025-04-14"
 # export SECAGENT_POLICY_MODEL="gemini-2.5-flash"
 
-# manual policies
-export SECAGENT_GENERATE="False"
-
 # auto policies
-# export SECAGENT_UPDATE="True"
-# export SECAGENT_IGNORE_UPDATE_ERROR="True"
+export SECAGENT_UPDATE="True"
+export SECAGENT_IGNORE_UPDATE_ERROR="True"
+# export SECAGENT_ONLY_ALLOW_NARROW="True"
 
 export COLUMNS=300
 

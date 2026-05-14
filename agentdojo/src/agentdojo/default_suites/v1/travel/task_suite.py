@@ -141,33 +141,3 @@ else:
         "get_day_calendar_events",
         "get_flight_information"
     ])
-    # manual policies
-    if not generate_policy:
-        policies = {
-            "get_all_hotels_in_city":                        [(1, 0, {}, 0)],
-            "get_hotels_prices":                             [(1, 0, {}, 0)],
-            "get_rating_reviews_for_hotels":                 [(1, 0, {}, 0)],
-            "get_hotels_address":                            [(1, 0, {}, 0)],
-            "get_all_restaurants_in_city":                   [(1, 0, {}, 0)],
-            "get_cuisine_type_for_restaurants":              [(1, 0, {}, 0)],
-            "get_restaurants_address":                       [(1, 0, {}, 0)],
-            "get_rating_reviews_for_restaurants":            [(1, 0, {}, 0)],
-            "get_dietary_restrictions_for_all_restaurants":  [(1, 0, {}, 0)],
-            "get_contact_information_for_restaurants":       [(1, 0, {}, 0)],
-            "get_price_for_restaurants":                     [(1, 0, {}, 0)],
-            "check_restaurant_opening_hours":                [(1, 0, {}, 0)],
-            "get_all_car_rental_companies_in_city":          [(1, 0, {}, 0)],
-            "get_car_types_available":                       [(1, 0, {}, 0)],
-            "get_rating_reviews_for_car_rental":             [(1, 0, {}, 0)],
-            "get_car_fuel_options":                          [(1, 0, {}, 0)],
-            "get_car_rental_address":                        [(1, 0, {}, 0)],
-            "get_car_price_per_day":                         [(1, 0, {}, 0)],
-            "search_calendar_events":                        [(1, 0, {}, 0)],
-            "get_day_calendar_events":                       [(1, 0, {}, 0)],
-            "get_flight_information":                        [(1, 0, {}, 0)],
-            "create_calendar_event":                         [(1, 0, {}, 0)],
-            "send_email":                                    [(1, 0, {
-                "recipients": {'items': {'enum': ["janeLong@google.com", "janelong@google.com"]}}
-            }, 0)],
-        }
-        update_security_policy(policies)
