@@ -1,7 +1,15 @@
 #!/bin/bash
-log_dir="logs/update"
+# Logs are written to logs/<model>+progent/<suite>/<user_task>/<attack>/<injection>.json
+# The "+progent" suffix is added automatically when Progent is enabled
+# (SECAGENT_GENERATE=True, the default). Set SECAGENT_GENERATE=False for a plain
+# baseline run, whose logs land under logs/<model>/... instead.
+log_dir="logs"
 
 mkdir -p $log_dir
+
+# Toggle Progent privilege control. "True" (default) -> logs/<model>+progent/...
+#                                   "False"          -> logs/<model>/... (baseline)
+export SECAGENT_GENERATE="True"
 
 model="gpt-4o-2024-08-06"
 # model="claude-3-7-sonnet-20250219"

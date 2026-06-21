@@ -82,10 +82,10 @@ class OutputLogger(Logger):
         messages = messages[len(self.messages) :]
         self.messages += messages
 
-        user_task_id = kwargs.get("user_task_id" or "unknown user_task_id")
-        injection_task_id = kwargs.get("injection_task_id" or "unknown injection_task_id")
-        suite_name = kwargs.get("suite_name" or "unknown suite_name")
-        pipeline_name = kwargs.get("pipeline_name" or "pipeline suite_name")
+        user_task_id = kwargs.get("user_task_id", "unknown user_task_id")
+        injection_task_id = kwargs.get("injection_task_id", "unknown injection_task_id")
+        suite_name = kwargs.get("suite_name", "unknown suite_name")
+        pipeline_name = kwargs.get("pipeline_name", "unknown pipeline_name")
 
         if user_task_id != self.previous_user_task_id:
             self.table = Table(

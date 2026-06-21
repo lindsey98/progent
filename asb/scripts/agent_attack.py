@@ -24,12 +24,22 @@ if __name__ == '__main__':
             for attack_type in attack_types:
                 if llm.startswith('gpt') or llm.startswith('gemini') or llm.startswith('claude'):
                     llm_name = llm
-                    backend=None
+                    backend = None
                 elif llm.startswith('ollama'):
                     llm_name = llm.split('/')[-1]
-                    backend='ollama'
+                    backend = 'ollama'
+                else:
+                    # Locally served open-weight models, e.g.
+                    # meta-llama/Llama-3.3-70B-Instruct or Qwen/Qwen3-30B-A3B-Instruct-2507.
+                    llm_name = llm.split('/')[-1]
+                    backend = 'vllm'
 
-                log_path = f'logs/{injection_method}/{llm_name}'
+                # Append "+progent" when Progent privilege control is enabled, mirroring
+                # the AgentDojo log layout (logs/<model>+progent/...).
+                progent_on = os.getenv("SECAGENT_GENERATE", "True").lower() == "true"
+                model_dir = f"{llm_name}+progent" if progent_on else llm_name
+
+                log_path = f'logs/{injection_method}/{model_dir}'
                 database = f'memory_db/direct_prompt_injection/{attack_type}_gpt-4o-mini'
 
                 if attack_tool_type == 'all':

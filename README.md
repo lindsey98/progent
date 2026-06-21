@@ -12,6 +12,7 @@ policy are executed. This repository contains the Progent library
 ---
 
 ## Table of Contents
+- [Repository Layout](#repository-layout)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Environment Variables](#environment-variables)
@@ -25,6 +26,25 @@ policy are executed. This repository contains the Progent library
   - [AgentDojo](#agentdojo)
   - [ASB](#asb)
   - [Real-world Agents](#real-world-agents)
+- [Logs / Output Layout](#logs--output-layout)
+
+---
+
+## Repository Layout
+
+| Directory | What it is |
+| --- | --- |
+| `secagent/` | **The Progent library.** Implements privilege control: security-policy generation/update, the tool-call checker, and integrations (a generic tool wrapper, an OpenAI-agents wrapper, and an MCP proxy). Everything else depends on this. |
+| `agentdojo/` | The **[AgentDojo](https://github.com/ethz-spylab/agentdojo) benchmark**, integrated with Progent. Uses AgentDojo's own agent pipeline to run the `banking` / `slack` / `travel` / `workspace` suites with and without prompt-injection attacks. This is the main benchmark for the paper's numbers. |
+| `agentdojo-mcp/` | The **same AgentDojo tasks exposed over [MCP](https://modelcontextprotocol.io/) (Model Context Protocol)**. `mcp_server.py` serves the suite's tools as MCP tools (plus a small REST API for task setup/checking). It does **not** run an agent itself — it is the *environment/tool server* that the real-world agent frameworks connect to. Think of it as "AgentDojo, but driven by an external agent over MCP instead of AgentDojo's built-in pipeline." |
+| `real-world-agents/` | **Drivers that run real, production agent frameworks** — the OpenAI Agents SDK, LangChain, OpenHands, and AutoGen — against the `agentdojo-mcp` server. Progent is applied as an MCP proxy / tool wrapper so the *same* privilege control is enforced on off-the-shelf agent frameworks, not just the research harness. This shows Progent works on real agents, not only the benchmark. |
+| `asb/` | The **[Agent Security Bench (ASB)](https://github.com/agiresearch/ASB)** harness, integrated with Progent. A second, independent attack benchmark with its own agents, tools, and memory database. |
+
+> **In short:** `agentdojo/` is the self-contained benchmark. `agentdojo-mcp/`
+> (the tool server) **plus** `real-world-agents/` (the agent drivers) are two
+> halves of one setup that demonstrates Progent on real agent frameworks via
+> MCP. `asb/` is a separate benchmark. All of them import privilege control
+> from `secagent/`.
 
 ---
 
@@ -228,10 +248,26 @@ The model(s) to evaluate are listed under `llms:` in the chosen config file
 
 ### Real-world Agents
 
+This experiment runs **real agent frameworks** (OpenAI Agents SDK, LangChain,
+OpenHands, AutoGen) against the AgentDojo tasks, with Progent enforcing
+privilege control. It has two pieces (see [Repository Layout](#repository-layout)):
+
+1. **`agentdojo-mcp/`** — the *tool/environment server*. It exposes the
+   AgentDojo suites as MCP tools (plus a REST API for task setup and checking).
+   It does not run an agent itself.
+2. **`real-world-agents/`** — the *agent drivers*. They connect a real agent
+   framework to the MCP server and let Progent (via its MCP proxy / wrappers)
+   gate every tool call.
+
+So you start the server first, then run the drivers against it:
+
 ```bash
+# 1. Start the tool/environment server (terminal 1)
 cd agentdojo-mcp
 pip install -e .       # install agentdojo-mcp
-python mcp_server.py   # start the mcp server
+python mcp_server.py   # serves AgentDojo tasks as MCP tools
+
+# 2. Run a real agent framework against it (terminal 2)
 cd ..
 pip install -e .       # install progent
 cd real-world-agents
@@ -242,3 +278,32 @@ pip install -r requirements.txt
 `run.sh` selects the agent framework via `AGENT_TYPE`
 (`openai`, `langchain`, `openhands`, or `autogen`) and configures Progent
 through the `SECAGENT_*` variables described above.
+
+---
+
+## Logs / Output Layout
+
+Both AgentDojo and ASB write results under a `logs/` directory and use the same
+model-naming convention: the model **basename** with a **`+progent`** suffix
+when Progent privilege control is enabled (`SECAGENT_GENERATE=True`, the
+default). A plain baseline run (`SECAGENT_GENERATE=False`) drops the suffix.
+
+**AgentDojo** writes one JSON file per task:
+
+```
+logs/
+└── Llama-3.3-70B-Instruct+progent/        # <model>+progent (or <model> for baseline)
+    └── banking/                           # suite
+        └── user_task_0/                   # user task
+            ├── none/none.json             # benign run (no attack)
+            └── important_instructions/injection_task_0.json   # under attack
+```
+
+**ASB** writes CSV/JSON result files under a parallel layout:
+
+```
+logs/
+└── observation_prompt_injection/          # injection method
+    └── Llama-3.3-70B-Instruct+progent/    # <model>+progent (or <model> for baseline)
+        └── ...                            # defense / attack type results
+```

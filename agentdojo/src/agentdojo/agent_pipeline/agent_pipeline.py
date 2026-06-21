@@ -52,6 +52,30 @@ def load_system_message(system_message_name: str | None) -> str:
     return system_messages.get(system_message_name, system_messages["default"])
 
 
+def progent_enabled() -> bool:
+    """Whether Progent privilege control is active for this run.
+
+    Progent is driven by the `SECAGENT_GENERATE` environment variable (it is on
+    by default). When it is off, the run is a plain baseline without privilege
+    control.
+    """
+    return os.getenv("SECAGENT_GENERATE", "True").lower() == "true"
+
+
+def make_run_name(model: str) -> str:
+    """Build the log/run name for a model.
+
+    Uses the model basename (dropping any provider prefix such as `meta-llama/`)
+    and appends `+progent` when Progent's privilege control is enabled, e.g.
+    `Llama-3.3-70B-Instruct+progent`. This keeps log directories tidy and
+    consistent across benchmarks.
+    """
+    name = model.split("/")[-1]
+    if progent_enabled():
+        name = f"{name}+progent"
+    return name
+
+
 def get_llm(provider: str, model: str) -> BasePipelineElement:
     if provider == "openai":
         client = openai.OpenAI()
@@ -152,7 +176,7 @@ class AgentPipeline(BasePipelineElement):
         llm = (
             get_llm(MODEL_PROVIDERS[ModelsEnum(config.llm)], config.llm) if isinstance(config.llm, str) else config.llm
         )
-        llm_name = config.llm if isinstance(config.llm, str) else llm.name
+        llm_name = make_run_name(config.llm) if isinstance(config.llm, str) else llm.name
 
         assert config.system_message is not None
         system_message_component = SystemMessage(config.system_message)
