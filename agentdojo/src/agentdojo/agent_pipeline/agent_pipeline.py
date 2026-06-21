@@ -74,7 +74,16 @@ def get_llm(provider: str, model: str) -> BasePipelineElement:
     elif provider == "secalign-prompting":
         client = openai.OpenAI(
             api_key="EMPTY",
-            base_url="http://localhost:8000/v1",
+            base_url=os.getenv("LOCAL_MODEL_BASE_URL", "http://localhost:8000/v1"),
+        )
+        llm = LocalLLM(client, model)
+    elif provider == "local-prompting":
+        # Locally served models (e.g. via `vllm serve ...`) exposing an
+        # OpenAI-compatible API. Tool calling is handled through prompting so
+        # that no server-side tool-call parser is required.
+        client = openai.OpenAI(
+            api_key=os.getenv("LOCAL_MODEL_API_KEY", "EMPTY"),
+            base_url=os.getenv("LOCAL_MODEL_BASE_URL", "http://localhost:8000/v1"),
         )
         llm = LocalLLM(client, model)
     elif provider == "cohere":

@@ -9,11 +9,17 @@ model="gpt-4o-2024-08-06"
 # model="claude-sonnet-4-20250514"
 # model="gpt-4.1-2025-04-14"
 # model="gemini-2.5-flash"
+# Locally served models (start with `vllm serve <model> --port 8000`; set LOCAL_MODEL_BASE_URL if not on localhost:8000)
+# model="Qwen/Qwen3-30B-A3B-Instruct-2507"  # vllm serve Qwen/Qwen3-30B-A3B-Instruct-2507 --tensor-parallel-size 2 --port 8000 --gpu-memory-utilization 0.95
+# model="meta-llama/Llama-3.3-70B-Instruct" # vllm serve meta-llama/Llama-3.3-70B-Instruct --tensor-parallel-size 4 --port 8000 --gpu-memory-utilization 0.95
 
 export SECAGENT_POLICY_MODEL="gpt-4o-2024-08-06"
 # export SECAGENT_POLICY_MODEL="claude-sonnet-4-20250514"
 # export SECAGENT_POLICY_MODEL="gpt-4.1-2025-04-14"
 # export SECAGENT_POLICY_MODEL="gemini-2.5-flash"
+# Locally served policy models (set SECAGENT_POLICY_BASE_URL if not on 127.0.0.1:8000)
+# export SECAGENT_POLICY_MODEL="Qwen/Qwen3-30B-A3B-Instruct-2507"
+# export SECAGENT_POLICY_MODEL="meta-llama/Llama-3.3-70B-Instruct"
 
 # auto policies
 export SECAGENT_UPDATE="True"

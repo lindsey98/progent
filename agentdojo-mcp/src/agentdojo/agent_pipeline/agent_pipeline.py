@@ -70,6 +70,14 @@ def get_llm(provider: str, model: str) -> BasePipelineElement:
             base_url="https://api.together.xyz/v1",
         )
         llm = PromptingLLM(client, model)
+    elif provider == "local-prompting":
+        # Locally served models (e.g. via `vllm serve ...`) exposing an
+        # OpenAI-compatible API. Tool calling is handled through prompting.
+        client = openai.OpenAI(
+            api_key=os.getenv("LOCAL_MODEL_API_KEY", "EMPTY"),
+            base_url=os.getenv("LOCAL_MODEL_BASE_URL", "http://localhost:8000/v1"),
+        )
+        llm = PromptingLLM(client, model)
     elif provider == "cohere":
         client = cohere.Client()
         llm = CohereLLM(client, model)

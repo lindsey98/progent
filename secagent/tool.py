@@ -200,7 +200,10 @@ def api_request(sys_prompt, user_prompt, temperature=0.0) -> None:
         return response.text
     from openai import OpenAI
     if policy_model.startswith("meta-llama/") or policy_model.startswith("Qwen/"):
-        client = OpenAI(base_url="http://127.0.0.1:8000/v1", api_key="EMPTY")
+        client = OpenAI(
+            base_url=os.getenv("SECAGENT_POLICY_BASE_URL", "http://127.0.0.1:8000/v1"),
+            api_key=os.getenv("SECAGENT_POLICY_API_KEY", "EMPTY"),
+        )
     else:
         client = OpenAI()
     if policy_model.startswith("o1") or policy_model.startswith("o3"):
