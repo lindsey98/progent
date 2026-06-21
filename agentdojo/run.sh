@@ -7,10 +7,7 @@ log_dir="logs"
 mkdir -p $log_dir
 export COLUMNS=300
 
-# Agent model. For a locally served model, start it first, e.g.:
-#   vllm serve Qwen/Qwen3-30B-A3B-Instruct-2507 --port 8000
-# (set LOCAL_MODEL_BASE_URL / SECAGENT_POLICY_BASE_URL if not on localhost:8000)
-model="Qwen/Qwen3-30B-A3B-Instruct-2507"
+model="Qwen3-30B-A3B-Instruct-2507"
 # model="gpt-4o-2024-08-06"
 # model="meta-llama/Llama-3.3-70B-Instruct"
 

@@ -20,6 +20,15 @@ the experiment harnesses from the paper.
 `agentdojo-mcp/` (server) **+** `real-world-agents/` (agents) are two halves of
 one MCP setup. `agentdojo/` and `asb/` are standalone benchmarks.
 
+### Set up a virtual environment
+
+```bash
+# or with conda
+conda create -n progent python=3.10 -y
+conda activate progent
+```
+
+
 ## Installation
 
 `secagent` (this repo) is **not** installed as a package — install only its
