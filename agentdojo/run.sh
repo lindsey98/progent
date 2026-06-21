@@ -1,12 +1,12 @@
 #!/bin/bash
-# Run the AgentDojo benchmark directly from the repo, without an editable install.
-# After `pip install -r ../requirements.txt`, this script puts the local packages
-# (agentdojo in agentdojo/src, and secagent at the repo root) on PYTHONPATH.
-# agentdojo/src must come first so the real `agentdojo` package is found instead
-# of the top-level agentdojo/ directory.
+# Install agentdojo first (from the agentdojo/ directory):
+#     cd agentdojo && pip install -e .
+# secagent (the repo root) is NOT installed; install its deps with
+# `pip install -r ../requirements.txt`. This script then adds the repo root to
+# PYTHONPATH so that `import secagent` resolves to the directory.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-export PYTHONPATH="$SCRIPT_DIR/src:$REPO_ROOT:$PYTHONPATH"
+export PYTHONPATH="$REPO_ROOT:$PYTHONPATH"
 
 # Logs are written to logs/<model>+progent/<suite>/<user_task>/<attack>/<injection>.json
 # The "+progent" suffix is added automatically when Progent is enabled

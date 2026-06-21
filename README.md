@@ -72,42 +72,37 @@ conda activate progent
 
 ## Installation
 
-You do **not** need to install Progent as a package. Install the dependencies
-with `requirements.txt` and run the code directly from the repository:
+Progent itself (the `secagent` package, i.e. *this repo*) is **not** installed
+as a package — you install only its dependencies and run it directly from the
+repository directory. The benchmark harness (AgentDojo) **is** installed from
+its own directory.
 
 ```bash
+# 1. Install Progent (secagent) dependencies — secagent stays un-installed and is
+#    imported directly from this directory.
 pip install -r requirements.txt
+
+# 2. Install the AgentDojo benchmark from its directory.
+cd agentdojo
+pip install -e .          # install agentdojo
+cd ..
 ```
 
-`requirements.txt` covers Progent (`secagent`) and the AgentDojo benchmark.
-Because nothing is installed into `site-packages`, you make the local packages
-importable by putting them on `PYTHONPATH` (run this from the repo root):
+When you run the benchmark via `agentdojo/run.sh`, the script adds the repo root
+to `PYTHONPATH` so that `import secagent` resolves to this directory (no install
+of `secagent` needed):
 
 ```bash
-export PYTHONPATH="$PWD/agentdojo/src:$PWD:$PYTHONPATH"
+cd agentdojo
+./run.sh
 ```
 
-> **Order matters:** `agentdojo/src` must come *before* the repo root so that
-> the real `agentdojo` package under `src/` is found instead of the top-level
-> `agentdojo/` directory.
-
-The provided run scripts (e.g. `agentdojo/run.sh`) set `PYTHONPATH` for you, so
-you can simply `cd agentdojo && ./run.sh` after installing the requirements.
-
-<details>
-<summary>Prefer an editable install instead?</summary>
-
-```bash
-pip install -e .            # installs secagent
-cd agentdojo && pip install -e .   # installs agentdojo
-```
-</details>
-
-Each experiment harness has its own additional dependencies; see
-[Experiments in the Paper](#experiments-in-the-paper) for per-harness
-installation steps. ASB and the real-world-agents harness ship their own
-`requirements.txt` (`asb/requirements.txt`,
-`real-world-agents/requirements.txt`).
+The other harnesses are installed the same way — the AgentDojo-style packages
+(`agentdojo/`, `agentdojo-mcp/`) via `pip install -e .` from their directories,
+while `secagent` always comes from the repo root on `PYTHONPATH`. ASB and the
+real-world-agents harness ship their own `requirements.txt`
+(`asb/requirements.txt`, `real-world-agents/requirements.txt`); see
+[Experiments in the Paper](#experiments-in-the-paper).
 
 ---
 
@@ -240,9 +235,10 @@ launch is sufficient.
 ### AgentDojo
 
 ```bash
-pip install -r requirements.txt   # install secagent + agentdojo deps (from repo root)
+pip install -r requirements.txt   # install secagent deps (from repo root)
 cd agentdojo
-./run.sh                          # run.sh sets PYTHONPATH; no install needed
+pip install -e .                  # install agentdojo
+./run.sh                          # run.sh adds the repo root to PYTHONPATH for secagent
 ```
 
 `run.sh` sets the agent model (`--model`), the policy model
@@ -287,14 +283,14 @@ So you start the server first, then run the drivers against it:
 ```bash
 # 1. Start the tool/environment server (terminal 1)
 cd agentdojo-mcp
-pip install -r requirements.txt                  # install agentdojo-mcp deps
-export PYTHONPATH="$PWD/src:$PWD/..:$PYTHONPATH"  # make agentdojo (src) + secagent importable
-python mcp_server.py                             # serves AgentDojo tasks as MCP tools
+pip install -e .                        # install agentdojo-mcp (includes the MCP server deps)
+export PYTHONPATH="$PWD/..:$PYTHONPATH"  # make secagent importable from the repo root
+python mcp_server.py                     # serves AgentDojo tasks as MCP tools
 
 # 2. Run a real agent framework against it (terminal 2)
 cd real-world-agents
-pip install -r requirements.txt                  # install agent-framework deps
-export PYTHONPATH="$PWD/..:$PYTHONPATH"           # make secagent importable
+pip install -r requirements.txt          # install agent-framework deps
+export PYTHONPATH="$PWD/..:$PYTHONPATH"   # make secagent importable from the repo root
 ./run.sh
 ```
 

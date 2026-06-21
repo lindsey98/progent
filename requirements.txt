@@ -1,36 +1,24 @@
-# Dependencies for Progent (secagent) + the AgentDojo benchmark.
+# Dependencies for Progent (secagent) ONLY.
 #
-# This lets you install everything WITHOUT doing an editable install
-# (`pip install -e .`). After `pip install -r requirements.txt`, run the code
-# directly from the repo by putting the local packages on PYTHONPATH, e.g.:
+# secagent (the root package, i.e. "this repo itself") is NOT installed as a
+# package. Instead, install just its dependencies here and run it directly from
+# the repository directory:
 #
-#   export PYTHONPATH="$PWD/agentdojo/src:$PWD:$PYTHONPATH"
-#   python -m agentdojo.scripts.benchmark -s banking --model gpt-4o-2024-08-06 --logdir logs
+#   pip install -r requirements.txt
 #
-# (agentdojo/src must come before the repo root so the `agentdojo` package in
-# src/ is found instead of the top-level agentdojo/ directory.)
+# The benchmark harnesses ARE installed from their own directories, e.g.:
+#
+#   cd agentdojo && pip install -e .     # installs agentdojo + its deps
+#
+# When you run agentdojo/run.sh, it adds the repo root to PYTHONPATH so that
+# `import secagent` resolves to this directory (no install needed).
 #
 # ASB and the real-world-agents harness have their own requirements files:
 #   asb/requirements.txt, real-world-agents/requirements.txt
 
-# --- Progent (secagent) core ---
 docstring-parser>=0.15
 jsonschema
 pydantic[email]>=2.7.1
 openai>=1.59.7
 anthropic>=0.47.0
 z3-solver
-
-# --- AgentDojo benchmark ---
-tenacity>=8.2.3
-langchain>=0.1.17
-typing-extensions>=4.11.0
-cohere>=5.3.4
-pyyaml>=6.0.1
-click>=8.1.7
-deepdiff>=7.0.1
-rich>=13.7.1
-vertexai>=1.49.0
-openapi-pydantic>=0.5.0
-jsonref>=1.1.0
-python-dotenv>=1.0.1
