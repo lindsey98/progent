@@ -45,6 +45,14 @@ generate_policy = os.getenv('SECAGENT_GENERATE', "True").lower() == "true"
 enable_secagent = os.getenv("ENABLE_SECAGENT", "False").lower() == "true"
 
 
+def is_local_policy_model() -> bool:
+    """True when the policy model is served locally via an OpenAI-compatible
+    server (e.g. vLLM): anything that is not a hosted OpenAI/Claude/Gemini/Vertex
+    model. Covers names like ``Qwen3-30B-A3B-Instruct-2507``,
+    ``Llama-3.3-70B-Instruct``, ``meta-llama/*``, ``Qwen/*``, ``deepseek-ai/*``."""
+    return not policy_model.startswith(("gpt", "o1", "o3", "claude", "gemini", "vertex_ai/"))
+
+
 class Tool(TypedDict):
     name: str
     description: str
@@ -199,7 +207,9 @@ def api_request(sys_prompt, user_prompt, temperature=0.0) -> None:
         )
         return response.text
     from openai import OpenAI
-    if policy_model.startswith("meta-llama/") or policy_model.startswith("Qwen/"):
+    # Locally served models (Qwen3-..., Llama-3.3-..., meta-llama/*, Qwen/*, ...)
+    # use an OpenAI-compatible local server; hosted OpenAI models use the API.
+    if is_local_policy_model():
         client = OpenAI(
             base_url=os.getenv("SECAGENT_POLICY_BASE_URL", "http://127.0.0.1:8000/v1"),
             api_key=os.getenv("SECAGENT_POLICY_API_KEY", "EMPTY"),
@@ -309,7 +319,7 @@ def get_SYS_PROMPT() -> str:
     else:
         sys_prompt = SYS_PROMPT
     output_formater = ""
-    if policy_model.startswith("o1") or policy_model.startswith("o3") or policy_model.startswith("gpt-4.1") or policy_model.startswith("gemini") or policy_model.startswith("meta-llama/") or policy_model.startswith("Qwen/") or policy_model.startswith("vertex_ai/gemini"):
+    if policy_model.startswith("o1") or policy_model.startswith("o3") or policy_model.startswith("gpt-4.1") or policy_model.startswith("gemini") or is_local_policy_model() or policy_model.startswith("vertex_ai/gemini"):
         output_formater = "\nOutput format: ```json [{\"name\": tool_name, \"args\": restrictions}, ...] ```"
     if policy_model.startswith("claude") or policy_model.startswith("vertex_ai/claude"):
         sys_prompt = sys_prompt[:-1]
@@ -369,7 +379,7 @@ def get_SYS_PROMPT_2() -> str:
     if policy_model.startswith("gpt-4o-mini"):
         sys_prompt = sys_prompt[:-1]
         output_formater = " with json block. It should be an array of dictionaries like {\"name\": tool_name, \"args\": restrictions}."
-    if policy_model.startswith("gemini") or policy_model.startswith("meta-llama/") or policy_model.startswith("Qwen/"):
+    if policy_model.startswith("gemini") or is_local_policy_model():
         sys_prompt = sys_prompt[:-1]
         output_formater = " with json code block. It should be an array of dictionaries like {\"name\": tool_name, \"args\": restrictions}."
     return sys_prompt+output_formater
