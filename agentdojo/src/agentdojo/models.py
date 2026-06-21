@@ -5,8 +5,6 @@ class ModelsEnum(StrEnum):
     """Currently supported models."""
 
     GPT_4O_2024_05_13 = "gpt-4o-2024-05-13"
-    GPT_4O_2024_08_06 = "gpt-4o-2024-08-06"
-    GPT_4_1_2025_04_14 = "gpt-4.1-2025-04-14"
     """GPT-4o"""
     GPT_4O_MINI_2024_07_18 = "gpt-4o-mini-2024-07-18"
     """GPT-4o Mini"""
@@ -26,8 +24,10 @@ class ModelsEnum(StrEnum):
     """Claude 3.5 Sonnet October"""
     CLAUDE_3_7_SONNET_20250219 = "claude-3-7-sonnet-20250219"
     """Claude 3.7 Sonnet"""
-    CLAUDE_4_SONNET_20250514 = "claude-sonnet-4-20250514"
-    """Claude 4 Sonnet"""
+    CLAUDE_SONNET_4_5_20250929 = "claude-sonnet-4-5-20250929"
+    """Claude Sonnet 4.5"""
+    CLAUDE_3_5_HAIKU_20241022 = "claude-3-5-haiku-20241022"
+    """Claude 3.5 Haiku October"""
     CLAUDE_3_HAIKU_20240307 = "claude-3-haiku-20240307"
     """Claude 3 Haiku"""
     COMMAND_R_PLUS = "command-r-plus"
@@ -38,12 +38,31 @@ class ModelsEnum(StrEnum):
     """MistralAI Mixtral 8x7B Instruct v0.1"""
     LLAMA_3 = "meta-llama/Llama-3-70b-chat-hf"
     """Llama 3"""
-    LLAMA_3_3_70B_INSTRUCT = "meta-llama/Llama-3.3-70B-Instruct"
-    """Llama 3.3 70B Instruct (served locally)"""
-    QWEN_3_30B_A3B_INSTRUCT_2507 = "Qwen/Qwen3-30B-A3B-Instruct-2507"
-    """Qwen3 30B A3B Instruct 2507 (served locally)"""
-    META_SECALIGN_70B = "facebook/Meta-SecAlign-70B"
-    """Meta SecAlign 70B"""
+    LLAMA_3_3 = "llama-3.3-70b-instruct"
+    """Llama 3.3"""
+    LLAMA_3_3_70B_LOCAL = "Llama-3.3-70B-Instruct"
+    """Llama 3.3 70B served locally via an OpenAI-compatible server"""
+    LLAMA_3_1 = "meta-llama/Llama-3.1-8B-Instruct"
+    """Llama 3.1"""
+    LLAMA_2 = "meta-llama/Llama-2-7b-chat-hf"
+    """Llama 2"""
+    QWEN_2_5_7B = "Qwen/Qwen2.5-7B-Instruct"
+    """Qwen 2.5"""
+    QWEN_2_5_32B = "Qwen/Qwen2.5-32B-Instruct"
+    """Qwen 2.5 32B"""
+    QWEN_2_5_72B = "Qwen/Qwen2.5-72B-Instruct"
+    QWEN_3_30B_LOCAL = "Qwen3-30B-A3B-Instruct-2507"
+    """Qwen3 30B A3B Instruct served locally via an OpenAI-compatible server"""
+    DEEPSEEK_V3 = "deepseek-ai/DeepSeek-V3"
+    """DeepSeek V3"""
+    DEEPSEEK_R1 = "deepseek-ai/DeepSeek-R1"
+    """DeepSeek R1"""
+    DEEPSEEK_LLAMA = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+    """DeepSeek-R1-Distill-Llama-8B"""
+    MISTRAL_7B = "mistralai/Mistral-7B-Instruct-v0.3"
+    """Mistral 7B"""
+    PHI_4 = "microsoft/Phi-4-mini-instruct"
+    """Phi 4"""
     GEMINI_1_5_PRO_002 = "gemini-1.5-pro-002"
     """Gemini 1.5 Pro 002"""
     GEMINI_1_5_PRO_001 = "gemini-1.5-pro-001"
@@ -52,17 +71,14 @@ class ModelsEnum(StrEnum):
     """Gemini 1.5 Flash 002"""
     GEMINI_1_5_FLASH_001 = "gemini-1.5-flash-001"
     """Gemini 1.5 Flash 001"""
-    GEMINI_2_0_FLASH_EXP = "gemini-2.0-flash-exp"
-    """Gemini 2.0 Flash Exp"""
-    GEMINI_2_0_FLASH_001 = "gemini-2.0-flash-001"
-    """Gemini 2.0 Flash 001"""
-    GEMINI_2_5_FLASH = "gemini-2.5-flash"
-    """Gemini 2.5 Flash"""
+    HERMES_8B = "NousResearch/Hermes-3-Llama-3.1-8B"
+    """Hermes 3 Llama-3.1-8B"""
+    GRANITE_8B = "ibm-granite/granite-3.2-8b-instruct"
+    """IBM Granite 3.2 8B Instruct"""
+
 
 MODEL_PROVIDERS = {
     ModelsEnum.GPT_4O_2024_05_13: "openai",
-    ModelsEnum.GPT_4O_2024_08_06: "openai",
-    ModelsEnum.GPT_4_1_2025_04_14:"openai",
     ModelsEnum.GPT_4O_MINI_2024_07_18: "openai",
     ModelsEnum.GPT_3_5_TURBO_0125: "openai",
     ModelsEnum.GPT_4_0125_PREVIEW: "openai",
@@ -71,29 +87,37 @@ MODEL_PROVIDERS = {
     ModelsEnum.CLAUDE_3_SONNET_20240229: "anthropic",
     ModelsEnum.CLAUDE_3_5_SONNET_20240620: "anthropic",
     ModelsEnum.CLAUDE_3_5_SONNET_20241022: "anthropic",
-    ModelsEnum.CLAUDE_3_7_SONNET_20250219: "anthropic",
-    ModelsEnum.CLAUDE_4_SONNET_20250514: "anthropic",
+    ModelsEnum.CLAUDE_3_5_HAIKU_20241022: "anthropic",
     ModelsEnum.CLAUDE_3_HAIKU_20240307: "anthropic",
+    ModelsEnum.CLAUDE_3_7_SONNET_20250219: "anthropic",
+    ModelsEnum.CLAUDE_SONNET_4_5_20250929: "anthropic",
     ModelsEnum.COMMAND_R_PLUS: "cohere",
     ModelsEnum.COMMAND_R: "cohere",
     ModelsEnum.MISTRALAI_MIXTRAL_8X7B_INSTRUCT_V0_1: "together",
     ModelsEnum.LLAMA_3: "together-prompting",
-    ModelsEnum.LLAMA_3_3_70B_INSTRUCT: "local-prompting",
-    ModelsEnum.QWEN_3_30B_A3B_INSTRUCT_2507: "local-prompting",
-    ModelsEnum.META_SECALIGN_70B: "secalign-prompting",
+    ModelsEnum.LLAMA_3_1: "meta",
+    ModelsEnum.LLAMA_2: "meta",
+    ModelsEnum.LLAMA_3_3: "meta",
+    ModelsEnum.LLAMA_3_3_70B_LOCAL: "local",
+    ModelsEnum.QWEN_2_5_7B: "vllm",
+    ModelsEnum.QWEN_2_5_32B: "qdd",
+    ModelsEnum.QWEN_2_5_72B: "qdd",
+    ModelsEnum.QWEN_3_30B_LOCAL: "local",
+    ModelsEnum.DEEPSEEK_LLAMA: "vllm",
+    ModelsEnum.PHI_4: "vllm",
+    ModelsEnum.DEEPSEEK_V3: "deepseek",
+    ModelsEnum.DEEPSEEK_R1: "deepseek",
+    ModelsEnum.MISTRAL_7B: "mistral",
     ModelsEnum.GEMINI_1_5_PRO_001: "google",
     ModelsEnum.GEMINI_1_5_PRO_002: "google",
     ModelsEnum.GEMINI_1_5_FLASH_001: "google",
     ModelsEnum.GEMINI_1_5_FLASH_002: "google",
-    ModelsEnum.GEMINI_2_0_FLASH_EXP: "google",
-    ModelsEnum.GEMINI_2_0_FLASH_001: "google",
-    ModelsEnum.GEMINI_2_5_FLASH: "google",
+    ModelsEnum.HERMES_8B: "nousresearch",
+    ModelsEnum.GRANITE_8B: "ibm",
 }
 
 
 MODEL_NAMES = {
-    "gpt-4.1-2025-04-14": "GPT-4.1",
-    "gpt-4o-2024-08-06": "GPT-4",
     "gpt-4o-2024-05-13": "GPT-4",
     "gpt-4o-mini-2024-07-18": "GPT-4",
     "gpt-3.5-turbo-0125": "GPT-3.5",
@@ -103,21 +127,31 @@ MODEL_NAMES = {
     "claude-3-sonnet-20240229": "Claude",
     "claude-3-5-sonnet-20240620": "Claude",
     "claude-3-5-sonnet-20241022": "Claude",
-    "claude-3-7-sonnet-20250219": "Claude",
-    "claude-sonnet-4-20250514": "Claude",
+    "claude-3-5-haiku-20241022": "Claude",
     "claude-3-haiku-20240307": "Claude",
+    "claude-3-7-sonnet-20250219": "Claude",
+    "claude-sonnet-4-5-20250929": "Claude",
     "command-r-plus": "Command R+",
     "command-r": "Command R",
     "mistralai/Mixtral-8x7B-Instruct-v0.1": "Mixtral",
-    "meta-llama/Llama-3-70b-chat-hf": "AI assistant",
-    "meta-llama/Llama-3.3-70B-Instruct": "AI assistant",
-    "Qwen/Qwen3-30B-A3B-Instruct-2507": "AI assistant",
-    "facebook/Meta-SecAlign-70B": "AI assistant",
+    "mistralai/Mistral-7B-Instruct-v0.3": "Mistral",
+    "meta-llama/Llama-3-70b-chat-hf": "Llama",
+    "llama-3.3-70b-instruct": "Llama",
+    "Llama-3.3-70B-Instruct": "Llama",
+    "meta-llama/Llama-3.1-8B-Instruct": "Llama",
+    "meta-llama/Llama-2-7b-chat-hf": "AI assistant",
+    "Qwen3-30B-A3B-Instruct-2507": "Qwen created by Alibaba Cloud.",
+    "Qwen/Qwen2.5-7B-Instruct": "Qwen created by Alibaba Cloud.",
+    "Qwen/Qwen2.5-32B-Instruct": "Qwen created by Alibaba Cloud.",
+    "Qwen/Qwen2.5-72B-Instruct": "Qwen created by Alibaba Cloud.",
+    "deepseek-ai/DeepSeek-R1-Distill-Llama-8B": "AI assistant",
+    "deepseek-ai/DeepSeek-V3": "DeepSeek V3",
+    "deepseek-ai/DeepSeek-R1": "DeepSeek R1",
+    "microsoft/Phi-4-mini-instruct": "AI assistant",
     "gemini-1.5-pro-002": "AI model developed by Google",
     "gemini-1.5-pro-001": "AI model developed by Google",
     "gemini-1.5-flash-002": "AI model developed by Google",
     "gemini-1.5-flash-001": "AI model developed by Google",
-    "gemini-2.0-flash-exp": "AI model developed by Google",
-    "gemini-2.0-flash-001": "AI model developed by Google",
-    "gemini-2.5-flash": "AI model developed by Google",
+    "NousResearch/Hermes-3-Llama-3.1-8B": "AI assistant",
+    "ibm-granite/granite-3.2-8b-instruct": "AI model developed by IBM",
 }

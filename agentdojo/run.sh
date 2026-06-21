@@ -22,8 +22,9 @@ export SECAGENT_UPDATE="True"
 export SECAGENT_IGNORE_UPDATE_ERROR="True"
 
 for suite in banking slack travel workspace; do
-    SECAGENT_SUITE=$suite nohup python -m agentdojo.scripts.benchmark -s $suite --model "$model" --logdir $log_dir > $log_dir/$suite-no-attack.log 2>&1 &
-    SECAGENT_SUITE=$suite nohup python -m agentdojo.scripts.benchmark -s $suite --model "$model" --attack important_instructions --logdir $log_dir > $log_dir/$suite-attack.log 2>&1 &
+    SECAGENT_SUITE=$suite python -m agentdojo.scripts.benchmark -s $suite --model "$model" --logdir $log_dir &
+    SECAGENT_SUITE=$suite python -m agentdojo.scripts.benchmark -s $suite --model "$model" --attack important_instructions --logdir $log_dir &
 done
+wait
 
-echo "started"
+echo "all done"
