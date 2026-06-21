@@ -17,9 +17,11 @@ model="Qwen/Qwen3-30B-A3B-Instruct-2507"
 # Use the same model for the agent and for Progent's policy generation/update.
 export SECAGENT_POLICY_MODEL="$model"
 
-# Progent privilege control (SECAGENT_GENERATE) and policy auto-update
-# (SECAGENT_UPDATE) are ON by default -> logs go to logs/<model>+progent/...
-# Set SECAGENT_GENERATE=False for a plain baseline (logs to logs/<model>/...).
+# Progent privilege control (SECAGENT_GENERATE) is ON by default -> logs go to
+# logs/<model>+progent/... Set SECAGENT_GENERATE=False for a plain baseline.
+# Policy auto-update must be enabled explicitly: the benchmark's update gate
+# (agent_pipeline/tool_execution.py) defaults to off.
+export SECAGENT_UPDATE="True"
 export SECAGENT_IGNORE_UPDATE_ERROR="True"
 
 for suite in banking slack travel workspace; do
