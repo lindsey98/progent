@@ -118,16 +118,18 @@ def get_llm(provider: str, model: str) -> BasePipelineElement:
         llm = GoogleLLM(model)
     elif provider == 'vllm':
         client = openai.OpenAI(
-            api_key=os.getenv("LOCAL_MODEL_API_KEY", "EMPTY"),
-            base_url=os.getenv("LOCAL_MODEL_BASE_URL", "http://localhost:8000/v1"),
+            api_key=os.getenv("LOCAL_API_KEY", "EMPTY"),
+            base_url=os.getenv("LOCAL_BASE_URL", "http://localhost:8000/v1"),
         )
-        llm = LocalLLM(client, model)
+        # llm = PromptingLLM(client, model)
+        llm = OpenAILLM(client, model)
     elif provider == 'local':
         client = openai.OpenAI(
-            api_key=os.getenv("LOCAL_MODEL_API_KEY", "EMPTY"),
-            base_url=os.getenv("LOCAL_MODEL_BASE_URL", "http://localhost:8000/v1"),
+            api_key=os.getenv("LOCAL_API_KEY", "EMPTY"),
+            base_url=os.getenv("LOCAL_BASE_URL", "http://localhost:8000/v1"),
         )
-        llm = LocalLLM(client, model)
+        # llm = PromptingLLM(client, model)
+        llm = OpenAILLM(client, model)
     else:
         raise ValueError("Invalid provider")
     return llm
