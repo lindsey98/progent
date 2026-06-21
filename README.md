@@ -2,327 +2,118 @@
 
 Check out our paper [here](https://arxiv.org/abs/2504.11703).
 
-Progent secures LLM agents by enforcing **privilege control** over the tool
-calls an agent is allowed to make. It generates and updates a security policy
-for each task, and intercepts tool calls so that only calls permitted by the
-policy are executed. This repository contains the Progent library
-(`secagent`) together with the experiment harnesses used in the paper
-(AgentDojo, ASB, and a real-world MCP-based agent suite).
-
----
-
-## Table of Contents
-- [Repository Layout](#repository-layout)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Environment Variables](#environment-variables)
-  - [Model provider credentials](#model-provider-credentials)
-  - [Progent / policy settings](#progent--policy-settings)
-  - [Locally served models](#locally-served-models)
-- [Using Locally Served Models](#using-locally-served-models)
-  - [Qwen3-30B-A3B-Instruct-2507](#qwen3-30b-a3b-instruct-2507-local)
-  - [Llama-3.3-70B-Instruct](#llama-33-70b-instruct-local)
-- [Experiments in the Paper](#experiments-in-the-paper)
-  - [AgentDojo](#agentdojo)
-  - [ASB](#asb)
-  - [Real-world Agents](#real-world-agents)
-- [Logs / Output Layout](#logs--output-layout)
-
----
+Progent secures LLM agents by enforcing **privilege control** over tool calls: it
+generates and updates a per-task security policy and blocks any tool call the
+policy does not allow. This repo contains the Progent library (`secagent`) plus
+the experiment harnesses from the paper.
 
 ## Repository Layout
 
 | Directory | What it is |
 | --- | --- |
-| `secagent/` | **The Progent library.** Implements privilege control: security-policy generation/update, the tool-call checker, and integrations (a generic tool wrapper, an OpenAI-agents wrapper, and an MCP proxy). Everything else depends on this. |
-| `agentdojo/` | The **[AgentDojo](https://github.com/ethz-spylab/agentdojo) benchmark**, integrated with Progent. Uses AgentDojo's own agent pipeline to run the `banking` / `slack` / `travel` / `workspace` suites with and without prompt-injection attacks. This is the main benchmark for the paper's numbers. |
-| `agentdojo-mcp/` | The **same AgentDojo tasks exposed over [MCP](https://modelcontextprotocol.io/) (Model Context Protocol)**. `mcp_server.py` serves the suite's tools as MCP tools (plus a small REST API for task setup/checking). It does **not** run an agent itself — it is the *environment/tool server* that the real-world agent frameworks connect to. Think of it as "AgentDojo, but driven by an external agent over MCP instead of AgentDojo's built-in pipeline." |
-| `real-world-agents/` | **Drivers that run real, production agent frameworks** — the OpenAI Agents SDK, LangChain, OpenHands, and AutoGen — against the `agentdojo-mcp` server. Progent is applied as an MCP proxy / tool wrapper so the *same* privilege control is enforced on off-the-shelf agent frameworks, not just the research harness. This shows Progent works on real agents, not only the benchmark. |
-| `asb/` | The **[Agent Security Bench (ASB)](https://github.com/agiresearch/ASB)** harness, integrated with Progent. A second, independent attack benchmark with its own agents, tools, and memory database. |
+| `secagent/` | **The Progent library** — policy generation/update, the tool-call checker, and integrations (tool wrapper, OpenAI-agents wrapper, MCP proxy). Everything else depends on it. |
+| `agentdojo/` | The **[AgentDojo](https://github.com/ethz-spylab/agentdojo) benchmark** + Progent. Runs the `banking`/`slack`/`travel`/`workspace` suites with and without prompt-injection attacks. Main benchmark for the paper. |
+| `agentdojo-mcp/` | The same AgentDojo tasks exposed over **[MCP](https://modelcontextprotocol.io/)**. `mcp_server.py` serves the tools as MCP tools (it does *not* run an agent) — it is the tool/environment server that `real-world-agents/` connect to. |
+| `real-world-agents/` | Drivers that run **real agent frameworks** (OpenAI Agents SDK, LangChain, OpenHands, AutoGen) against `agentdojo-mcp`, with Progent enforcing the same privilege control on off-the-shelf agents. |
+| `asb/` | The **[Agent Security Bench (ASB)](https://github.com/agiresearch/ASB)** harness + Progent. A separate attack benchmark with its own agents and memory DB. |
 
-> **In short:** `agentdojo/` is the self-contained benchmark. `agentdojo-mcp/`
-> (the tool server) **plus** `real-world-agents/` (the agent drivers) are two
-> halves of one setup that demonstrates Progent on real agent frameworks via
-> MCP. `asb/` is a separate benchmark. All of them import privilege control
-> from `secagent/`.
-
----
-
-## Requirements
-
-- Python `>= 3.9` (a clean virtual environment is strongly recommended)
-- API keys for any hosted model providers you intend to use (OpenAI,
-  Anthropic, Google Vertex AI, Cohere, Together, …)
-- For locally served open-weight models (Qwen3, Llama-3.3): a machine with
-  enough GPU memory and [vLLM](https://docs.vllm.ai/) installed
-
-### Set up a virtual environment
-
-```bash
-# with venv
-python -m venv .venv
-source .venv/bin/activate
-
-# or with conda
-conda create -n progent python=3.10 -y
-conda activate progent
-```
-
----
+`agentdojo-mcp/` (server) **+** `real-world-agents/` (agents) are two halves of
+one MCP setup. `agentdojo/` and `asb/` are standalone benchmarks.
 
 ## Installation
 
-Progent itself (the `secagent` package, i.e. *this repo*) is **not** installed
-as a package — you install only its dependencies and run it directly from the
-repository directory. The benchmark harness (AgentDojo) **is** installed from
-its own directory.
+`secagent` (this repo) is **not** installed as a package — install only its
+dependencies and import it from the directory. The benchmark itself *is*
+installed from its own directory.
 
 ```bash
-# 1. Install Progent (secagent) dependencies — secagent stays un-installed and is
-#    imported directly from this directory.
-pip install -r requirements.txt
-
-# 2. Install the AgentDojo benchmark from its directory.
-cd agentdojo
-pip install -e .          # install agentdojo
-cd ..
+pip install -r requirements.txt   # secagent deps (Python >= 3.9, a venv is recommended)
+cd agentdojo && pip install -e .   # install the AgentDojo benchmark
 ```
 
-When you run the benchmark via `agentdojo/run.sh`, the script adds the repo root
-to `PYTHONPATH` so that `import secagent` resolves to this directory (no install
-of `secagent` needed):
+`agentdojo/run.sh` adds the repo root to `PYTHONPATH` so `import secagent`
+resolves to this directory — no install of `secagent` needed.
+
+## Run (AgentDojo)
 
 ```bash
 cd agentdojo
-./run.sh
+./run.sh        # edit the `model` line in run.sh to pick a model
 ```
 
-The other harnesses are installed the same way — the AgentDojo-style packages
-(`agentdojo/`, `agentdojo-mcp/`) via `pip install -e .` from their directories,
-while `secagent` always comes from the repo root on `PYTHONPATH`. ASB and the
-real-world-agents harness ship their own `requirements.txt`
-(`asb/requirements.txt`, `real-world-agents/requirements.txt`); see
-[Experiments in the Paper](#experiments-in-the-paper).
+`run.sh` runs all four suites with/without the `important_instructions` attack,
+using the same model as the agent and as Progent's policy model. Set provider API
+keys first: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `CO_API_KEY` (Cohere),
+`GCP_PROJECT`/`GCP_LOCATION` (Vertex AI / Gemini), or `TOGETHER_API_KEY`.
 
----
+## Locally Served Models (vLLM)
 
-## Environment Variables
+`Qwen/Qwen3-30B-A3B-Instruct-2507` and `meta-llama/Llama-3.3-70B-Instruct` are
+registered as local models. Tool calling is done via prompting, so a plain
+`vllm serve` is enough (no server-side tool-call parser needed):
 
-Progent and the experiment harnesses are configured through environment
-variables. Export them in your shell (or place them in a `.env` /
-`run.sh`) before launching an experiment.
+```bash
+# 1. Serve the model (adjust --tensor-parallel-size to your GPUs)
+vllm serve Qwen/Qwen3-30B-A3B-Instruct-2507 --port 8000 --gpu-memory-utilization 0.95
 
-### Model provider credentials
+# 2. Use it in agentdojo/run.sh (already the default there):
+#    model="Qwen/Qwen3-30B-A3B-Instruct-2507"
+#    (SECAGENT_POLICY_MODEL is set to the same model)
+```
 
-These are read by the underlying SDKs and are only needed for the providers
-you actually use.
+If the server is not on `localhost:8000`, set `LOCAL_MODEL_BASE_URL` (agent) and
+`SECAGENT_POLICY_BASE_URL` (policy).
 
-| Variable | Used for | Notes |
-| --- | --- | --- |
-| `OPENAI_API_KEY` | OpenAI models (`gpt-4o`, `gpt-4.1`, …) | Required for OpenAI. |
-| `ANTHROPIC_API_KEY` | Anthropic models (`claude-*`) | Required for Anthropic. |
-| `TOGETHER_API_KEY` | Together-hosted models (e.g. Mixtral, Llama-3) | Required for the `together` providers. |
-| `CO_API_KEY` | Cohere models (`command-r*`) | Required for Cohere. |
-| `GCP_PROJECT` / `GCP_LOCATION` | Google Vertex AI (`gemini-*`) | Used to init Vertex AI; also run `gcloud auth application-default login`. |
+## Progent Settings
 
-### Progent / policy settings
-
-These control Progent's privilege-control behaviour. They are honoured by
-the AgentDojo and real-world-agent harnesses.
+Configured via environment variables (see `agentdojo/run.sh` for typical values).
+**Privilege control is ON by default** — `SECAGENT_GENERATE` and `SECAGENT_UPDATE`
+both default to `True`.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `ENABLE_SECAGENT` | `False` | Master switch that turns Progent's privilege control on. |
-| `SECAGENT_POLICY_MODEL` | `gpt-4o-2024-08-06` | Model used to **generate / update** the security policy. Can be a hosted model or a locally served one (see below). |
-| `SECAGENT_GENERATE` | `True` | Whether to auto-generate the security policy for each task. |
-| `SECAGENT_UPDATE` | `True` | Whether to allow the policy to be updated during a task. |
-| `SECAGENT_IGNORE_UPDATE_ERROR` | `False` | Continue running if a policy update fails to parse. |
-| `SECAGENT_ONLY_ALLOW_NARROW` | `False` | Only allow narrowly-scoped (more restrictive) policies. |
-| `SECAGENT_TASK_TYPE` | `general` | Task type hint used during policy generation. |
-| `SECAGENT_SUITE` | – | Which benchmark suite is being run (`banking`, `slack`, `travel`, `workspace`). |
+| `SECAGENT_GENERATE` | `True` | Generate a security policy per task. `False` = plain baseline (no Progent). |
+| `SECAGENT_UPDATE` | `True` | Allow the policy to be updated during a task. |
+| `SECAGENT_POLICY_MODEL` | `gpt-4o-2024-08-06` | Model used to generate/update the policy (hosted or local). |
+| `SECAGENT_IGNORE_UPDATE_ERROR` | `False` | Keep running if a policy update fails to parse. |
+| `SECAGENT_ONLY_ALLOW_NARROW` | `False` | Only allow narrowly-scoped (stricter) policies. |
+| `LOCAL_MODEL_BASE_URL` | `http://localhost:8000/v1` | Local **agent** model endpoint. |
+| `SECAGENT_POLICY_BASE_URL` | `http://127.0.0.1:8000/v1` | Local **policy** model endpoint. |
 
-### Locally served models
+## Other Benchmarks
 
-When the **agent** model or the **policy** model is served locally through
-an OpenAI-compatible endpoint (e.g. vLLM), the endpoint is configurable:
-
-| Variable | Default | Applies to |
-| --- | --- | --- |
-| `LOCAL_MODEL_BASE_URL` | `http://localhost:8000/v1` | The **agent** model endpoint (AgentDojo / real-world agents). |
-| `LOCAL_MODEL_API_KEY` | `EMPTY` | API key for the agent endpoint (vLLM ignores it). |
-| `SECAGENT_POLICY_BASE_URL` | `http://127.0.0.1:8000/v1` | The **policy** model endpoint (when `SECAGENT_POLICY_MODEL` is a local `meta-llama/*` or `Qwen/*` model). |
-| `SECAGENT_POLICY_API_KEY` | `EMPTY` | API key for the policy endpoint. |
-
-> **Tip:** if the agent model and the policy model are served by *different*
-> vLLM instances, give each its own port and point `LOCAL_MODEL_BASE_URL`
-> and `SECAGENT_POLICY_BASE_URL` at the respective ports.
-
----
-
-## Using Locally Served Models
-
-Progent supports running both the **agent** and the **policy** on
-open-weight models served locally with an OpenAI-compatible API. The
-following models are registered out of the box:
-
-| Model id | Role | Provider |
-| --- | --- | --- |
-| `Qwen/Qwen3-30B-A3B-Instruct-2507` | agent and/or policy | local (vLLM) |
-| `meta-llama/Llama-3.3-70B-Instruct` | agent and/or policy | local (vLLM) |
-
-Tool calling for locally served models is implemented through prompting, so
-**no server-side tool-call parser is required** — a vanilla `vllm serve`
-launch is sufficient.
-
-### Qwen3-30B-A3B-Instruct-2507 (local)
-
-1. Serve the model with vLLM (adjust `--tensor-parallel-size` to your GPUs):
-
-   ```bash
-   vllm serve Qwen/Qwen3-30B-A3B-Instruct-2507 \
-     --tensor-parallel-size 2 \
-     --port 8000 \
-     --gpu-memory-utilization 0.95
-   ```
-
-2. Point Progent at it and run, e.g. for AgentDojo:
-
-   ```bash
-   export LOCAL_MODEL_BASE_URL="http://localhost:8000/v1"
-   cd agentdojo
-   python -m agentdojo.scripts.benchmark -s banking \
-     --model "Qwen/Qwen3-30B-A3B-Instruct-2507"
-   ```
-
-   To also use it as the **policy** model:
-
-   ```bash
-   export SECAGENT_POLICY_MODEL="Qwen/Qwen3-30B-A3B-Instruct-2507"
-   export SECAGENT_POLICY_BASE_URL="http://127.0.0.1:8000/v1"
-   ```
-
-### Llama-3.3-70B-Instruct (local)
-
-1. Serve the model with vLLM:
-
-   ```bash
-   vllm serve meta-llama/Llama-3.3-70B-Instruct \
-     --tensor-parallel-size 4 \
-     --port 8000 \
-     --gpu-memory-utilization 0.95
-   ```
-
-2. Run with it as the agent model:
-
-   ```bash
-   export LOCAL_MODEL_BASE_URL="http://localhost:8000/v1"
-   cd agentdojo
-   python -m agentdojo.scripts.benchmark -s banking \
-     --model "meta-llama/Llama-3.3-70B-Instruct"
-   ```
-
-   And/or as the policy model:
-
-   ```bash
-   export SECAGENT_POLICY_MODEL="meta-llama/Llama-3.3-70B-Instruct"
-   export SECAGENT_POLICY_BASE_URL="http://127.0.0.1:8000/v1"
-   ```
-
----
-
-## Experiments in the Paper
-
-### AgentDojo
-
-```bash
-pip install -r requirements.txt   # install secagent deps (from repo root)
-cd agentdojo
-pip install -e .                  # install agentdojo
-./run.sh                          # run.sh adds the repo root to PYTHONPATH for secagent
-```
-
-`run.sh` sets the agent model (`--model`), the policy model
-(`SECAGENT_POLICY_MODEL`), and Progent options, then launches the benchmark
-across the `banking`, `slack`, `travel`, and `workspace` suites with and
-without the `important_instructions` attack. To use a local model, edit the
-`model` / `SECAGENT_POLICY_MODEL` lines to one of the local model ids above
-and start the corresponding vLLM server (see
-[Using Locally Served Models](#using-locally-served-models)).
-
-Check out more in [agentdojo/README.md](agentdojo/README.md).
-
-### ASB
+**ASB:**
 
 ```bash
 cd asb
-pip install -r requirements.txt   # install asb deps
-# Make secagent (Progent) importable without installing it:
-export PYTHONPATH="$PWD/..:$PYTHONPATH"
+pip install -r requirements.txt
+export PYTHONPATH="$PWD/..:$PYTHONPATH"   # make secagent importable
 python scripts/agent_attack.py --cfg_path config/OPI.yml
 ```
 
-The model(s) to evaluate are listed under `llms:` in the chosen config file
-(e.g. `config/OPI.yml`). ASB can drive locally deployed models through its
-`vllm`/`ollama` backends. Check out more in [asb/README.md](asb/README.md).
-
-### Real-world Agents
-
-This experiment runs **real agent frameworks** (OpenAI Agents SDK, LangChain,
-OpenHands, AutoGen) against the AgentDojo tasks, with Progent enforcing
-privilege control. It has two pieces (see [Repository Layout](#repository-layout)):
-
-1. **`agentdojo-mcp/`** — the *tool/environment server*. It exposes the
-   AgentDojo suites as MCP tools (plus a REST API for task setup and checking).
-   It does not run an agent itself.
-2. **`real-world-agents/`** — the *agent drivers*. They connect a real agent
-   framework to the MCP server and let Progent (via its MCP proxy / wrappers)
-   gate every tool call.
-
-So you start the server first, then run the drivers against it:
+**Real-world agents** (start the server, then the agent driver):
 
 ```bash
-# 1. Start the tool/environment server (terminal 1)
-cd agentdojo-mcp
-pip install -e .                        # install agentdojo-mcp (includes the MCP server deps)
-export PYTHONPATH="$PWD/..:$PYTHONPATH"  # make secagent importable from the repo root
-python mcp_server.py                     # serves AgentDojo tasks as MCP tools
+# terminal 1 — tool/environment server
+cd agentdojo-mcp && pip install -e .
+export PYTHONPATH="$PWD/..:$PYTHONPATH"
+python mcp_server.py
 
-# 2. Run a real agent framework against it (terminal 2)
-cd real-world-agents
-pip install -r requirements.txt          # install agent-framework deps
-export PYTHONPATH="$PWD/..:$PYTHONPATH"   # make secagent importable from the repo root
+# terminal 2 — real agent framework (set AGENT_TYPE in run.sh: openai/langchain/openhands/autogen)
+cd real-world-agents && pip install -r requirements.txt
+export PYTHONPATH="$PWD/..:$PYTHONPATH"
 ./run.sh
 ```
 
-`run.sh` selects the agent framework via `AGENT_TYPE`
-(`openai`, `langchain`, `openhands`, or `autogen`) and configures Progent
-through the `SECAGENT_*` variables described above.
+## Logs
 
----
-
-## Logs / Output Layout
-
-Both AgentDojo and ASB write results under a `logs/` directory and use the same
-model-naming convention: the model **basename** with a **`+progent`** suffix
-when Progent privilege control is enabled (`SECAGENT_GENERATE=True`, the
-default). A plain baseline run (`SECAGENT_GENERATE=False`) drops the suffix.
-
-**AgentDojo** writes one JSON file per task:
+AgentDojo and ASB write to `logs/` using the model basename with a `+progent`
+suffix when Progent is enabled (dropped for baseline runs):
 
 ```
-logs/
-└── Llama-3.3-70B-Instruct+progent/        # <model>+progent (or <model> for baseline)
-    └── banking/                           # suite
-        └── user_task_0/                   # user task
-            ├── none/none.json             # benign run (no attack)
-            └── important_instructions/injection_task_0.json   # under attack
-```
+# AgentDojo: one JSON per task
+logs/<model>+progent/<suite>/<user_task>/{none/none.json, <attack>/<injection>.json}
 
-**ASB** writes CSV/JSON result files under a parallel layout:
-
-```
-logs/
-└── observation_prompt_injection/          # injection method
-    └── Llama-3.3-70B-Instruct+progent/    # <model>+progent (or <model> for baseline)
-        └── ...                            # defense / attack type results
+# ASB: results under the injection method
+logs/<injection_method>/<model>+progent/...
 ```

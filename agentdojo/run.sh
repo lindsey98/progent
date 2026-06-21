@@ -1,58 +1,30 @@
 #!/bin/bash
-# Install agentdojo first (from the agentdojo/ directory):
-#     cd agentdojo && pip install -e .
-# secagent (the repo root) is NOT installed; install its deps with
-# `pip install -r ../requirements.txt`. This script then adds the repo root to
-# PYTHONPATH so that `import secagent` resolves to the directory.
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-export PYTHONPATH="$REPO_ROOT:$PYTHONPATH"
+# Install first:  cd agentdojo && pip install -e .   (and  pip install -r ../requirements.txt)
+# This script adds the repo root to PYTHONPATH so `import secagent` resolves to it.
+export PYTHONPATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd):$PYTHONPATH"
 
-# Logs are written to logs/<model>+progent/<suite>/<user_task>/<attack>/<injection>.json
-# The "+progent" suffix is added automatically when Progent is enabled
-# (SECAGENT_GENERATE=True, the default). Set SECAGENT_GENERATE=False for a plain
-# baseline run, whose logs land under logs/<model>/... instead.
 log_dir="logs"
-
 mkdir -p $log_dir
-
-# Toggle Progent privilege control. "True" (default) -> logs/<model>+progent/...
-#                                   "False"          -> logs/<model>/... (baseline)
-export SECAGENT_GENERATE="True"
-
-model="gpt-4o-2024-08-06"
-# model="claude-3-7-sonnet-20250219"
-# model="facebook/Meta-SecAlign-70B" # vllm serve meta-llama/Llama-3.3-70B-Instruct   --tokenizer facebook/Meta-SecAlign-70B   --tensor-parallel-size 4   --enable-lora   --max-lora-rank 64   --lora-modules facebook/Meta-SecAlign-70B=facebook/Meta-SecAlign-70B   --gpu_memory_utilization 0.95
-# model="claude-sonnet-4-20250514"
-# model="gpt-4.1-2025-04-14"
-# model="gemini-2.5-flash"
-# Locally served models (start with `vllm serve <model> --port 8000`; set LOCAL_MODEL_BASE_URL if not on localhost:8000)
-# model="Qwen/Qwen3-30B-A3B-Instruct-2507"  # vllm serve Qwen/Qwen3-30B-A3B-Instruct-2507 --tensor-parallel-size 2 --port 8000 --gpu-memory-utilization 0.95
-# model="meta-llama/Llama-3.3-70B-Instruct" # vllm serve meta-llama/Llama-3.3-70B-Instruct --tensor-parallel-size 4 --port 8000 --gpu-memory-utilization 0.95
-
-export SECAGENT_POLICY_MODEL="gpt-4o-2024-08-06"
-# export SECAGENT_POLICY_MODEL="claude-sonnet-4-20250514"
-# export SECAGENT_POLICY_MODEL="gpt-4.1-2025-04-14"
-# export SECAGENT_POLICY_MODEL="gemini-2.5-flash"
-# Locally served policy models (set SECAGENT_POLICY_BASE_URL if not on 127.0.0.1:8000)
-# export SECAGENT_POLICY_MODEL="Qwen/Qwen3-30B-A3B-Instruct-2507"
-# export SECAGENT_POLICY_MODEL="meta-llama/Llama-3.3-70B-Instruct"
-
-# auto policies
-export SECAGENT_UPDATE="True"
-export SECAGENT_IGNORE_UPDATE_ERROR="True"
-# export SECAGENT_ONLY_ALLOW_NARROW="True"
-
 export COLUMNS=300
 
-SECAGENT_SUITE=banking nohup python -m agentdojo.scripts.benchmark -s banking --model $model --logdir $log_dir > $log_dir/banking-no-attack.log 2>&1 &
-SECAGENT_SUITE=slack nohup python -m agentdojo.scripts.benchmark -s slack --model $model --logdir $log_dir > $log_dir/slack-no-attack.log 2>&1 &
-SECAGENT_SUITE=travel nohup python -m agentdojo.scripts.benchmark -s travel --model $model --logdir $log_dir > $log_dir/travel-no-attack.log 2>&1 &
-SECAGENT_SUITE=workspace nohup python -m agentdojo.scripts.benchmark -s workspace --model $model --logdir $log_dir > $log_dir/workspace-no-attack.log 2>&1 &
+# Agent model. For a locally served model, start it first, e.g.:
+#   vllm serve Qwen/Qwen3-30B-A3B-Instruct-2507 --port 8000
+# (set LOCAL_MODEL_BASE_URL / SECAGENT_POLICY_BASE_URL if not on localhost:8000)
+model="Qwen/Qwen3-30B-A3B-Instruct-2507"
+# model="gpt-4o-2024-08-06"
+# model="meta-llama/Llama-3.3-70B-Instruct"
 
-SECAGENT_SUITE=banking nohup python -m agentdojo.scripts.benchmark -s banking --model $model --attack important_instructions --logdir $log_dir > $log_dir/banking-attack.log 2>&1 &
-SECAGENT_SUITE=slack nohup python -m agentdojo.scripts.benchmark -s slack --model $model --attack important_instructions --logdir $log_dir > $log_dir/slack-attack.log 2>&1 &
-SECAGENT_SUITE=travel nohup python -m agentdojo.scripts.benchmark -s travel --model $model --attack important_instructions --logdir $log_dir > $log_dir/travel-attack.log 2>&1 &
-SECAGENT_SUITE=workspace nohup python -m agentdojo.scripts.benchmark -s workspace --model $model --attack important_instructions --logdir $log_dir > $log_dir/workspace-attack.log 2>&1 &
+# Use the same model for the agent and for Progent's policy generation/update.
+export SECAGENT_POLICY_MODEL="$model"
+
+# Progent privilege control (SECAGENT_GENERATE) and policy auto-update
+# (SECAGENT_UPDATE) are ON by default -> logs go to logs/<model>+progent/...
+# Set SECAGENT_GENERATE=False for a plain baseline (logs to logs/<model>/...).
+export SECAGENT_IGNORE_UPDATE_ERROR="True"
+
+for suite in banking slack travel workspace; do
+    SECAGENT_SUITE=$suite nohup python -m agentdojo.scripts.benchmark -s $suite --model "$model" --logdir $log_dir > $log_dir/$suite-no-attack.log 2>&1 &
+    SECAGENT_SUITE=$suite nohup python -m agentdojo.scripts.benchmark -s $suite --model "$model" --attack important_instructions --logdir $log_dir > $log_dir/$suite-attack.log 2>&1 &
+done
 
 echo "started"
