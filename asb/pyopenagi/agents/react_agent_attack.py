@@ -19,7 +19,7 @@ import jsonlines
 from openai import OpenAI
 from dotenv import load_dotenv
 import pandas as pd
-from secagent import generate_security_policy, update_available_tools, Tool, check_tool_call, update_always_allowed_tools
+from secagent import generate_security_policy, update_available_tools, Tool, check_tool_call, update_always_allowed_tools, get_policy_trace, get_generated_policy
 
 # manual policy
 # update_always_allowed_tools(["sys_monitor", "update_manager", "market_data_api", "portfolio_manager", "legal_doc_review", "compliance_checker", "medical_database", "prescription_manager", "course_selector", "performance_evaluator", "therapy_guide", "mental_health_tracker", "inventory_manager", "sales_analytics", "flight_simulator", "system_analyzer", "research_database", "summarizer", "path_planner", "sensor_fusion"])
@@ -366,6 +366,8 @@ class ReactAgentAttack(BaseAgent):
             "messages": self.messages,
             "attacker_tool": self.tool_name,
             "normal_tools": self.normal_tools,
+            "security_policy": get_generated_policy(),
+            "policy_trace": get_policy_trace(),
             "memory_search": self.memory_search,
             "memory_found": self.memory_found,
             "args": self.args,

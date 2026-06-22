@@ -205,7 +205,9 @@ def main():
             # "Task",
             "Memory Found",
             "Aggressive",
-            'messages'
+            'messages',
+            'security_policy',
+            'policy_trace'
         ])
 
 
@@ -289,7 +291,9 @@ def main():
                 # task.split(';')[0],
                 "N/A" if memory_found_flag is None else (1 if memory_found_flag else 0),
                 1 if res['agg'] == 'True' else 0,
-                res["messages"]
+                res["messages"],
+                json.dumps(res.get("security_policy")),
+                json.dumps(res.get("policy_trace"))
             ])
 
     # print(f"Results saved to {args.res_file}")
