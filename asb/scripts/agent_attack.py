@@ -29,10 +29,11 @@ if __name__ == '__main__':
                     llm_name = llm.split('/')[-1]
                     backend = 'ollama'
                 else:
-                    # Locally served open-weight models, e.g.
-                    # meta-llama/Llama-3.3-70B-Instruct or Qwen/Qwen3-30B-A3B-Instruct-2507.
+                    # Locally served open-weight models behind an OpenAI-compatible
+                    # server (e.g. `vllm serve ... --port 8000`), reached via LOCAL_BASE_URL.
+                    # Examples: meta-llama/Llama-3.3-70B-Instruct, Qwen/Qwen3-30B-A3B-Instruct-2507.
                     llm_name = llm.split('/')[-1]
-                    backend = 'vllm'
+                    backend = 'local'
 
                 # Append "+progent" when Progent privilege control is enabled, mirroring
                 # the AgentDojo log layout (logs/<model>+progent/...).

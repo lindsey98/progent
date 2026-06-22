@@ -8,6 +8,7 @@ from .llm_classes.hf_native_llm import HfNativeLLM
 # standard implementation of LLM methods
 from .llm_classes.ollama_llm import OllamaLLM
 from .llm_classes.vllm import vLLM
+from .llm_classes.openai_local_llm import OpenAILocalLLM
 
 class LLMKernel:
     def __init__(self,
@@ -38,6 +39,16 @@ class LLMKernel:
 
             elif use_backend == "vllm":
                 self.model = vLLM(
+                    llm_name=llm_name,
+                    max_gpu_memory=max_gpu_memory,
+                    eval_device=eval_device,
+                    max_new_tokens=max_new_tokens,
+                    log_mode=log_mode
+                )
+            elif use_backend == "local":
+                # Locally served model via an OpenAI-compatible server
+                # (e.g. `vllm serve ... --port 8000`); uses LOCAL_BASE_URL.
+                self.model = OpenAILocalLLM(
                     llm_name=llm_name,
                     max_gpu_memory=max_gpu_memory,
                     eval_device=eval_device,

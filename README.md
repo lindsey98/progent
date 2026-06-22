@@ -101,6 +101,12 @@ export PYTHONPATH="$PWD/..:$PYTHONPATH"   # make secagent importable
 python scripts/agent_attack.py --cfg_path config/OPI.yml
 ```
 
+Local models: list a served model under `llms:` in the config (e.g.
+`Qwen/Qwen3-30B-A3B-Instruct-2507`). Non gpt/gemini/claude/ollama names use the
+`local` backend, which talks to an OpenAI-compatible server at `LOCAL_BASE_URL`
+(default `http://localhost:8000/v1`) — the same `vllm serve` endpoint AgentDojo
+uses. (ASB's `vllm`/`ollama` backends still load models in-process instead.)
+
 **Real-world agents** (start the server, then the agent driver):
 
 ```bash
