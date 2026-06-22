@@ -28,3 +28,6 @@ done
 wait
 
 echo "all done"
+
+# Print utility/security for both the no-attack and important_instructions runs.
+python print_results.py --model "$model" --log-dir "$log_dir"

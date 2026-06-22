@@ -1,40 +1,75 @@
-import json, glob
+import argparse
+import glob
+import json
+import os
 
-log_dir = "logs"
-model = "Qwen3-30B-A3B-Instruct-2507+progent"
-attack = "important_instructions"
+SUITES = ["banking", "slack", "travel", "workspace"]
 
-results = {}
-for suite in ["banking", "slack", "travel", "workspace"]:
-    if attack is None:
-        pattern = f"{log_dir}/{model}/{suite}/user_task_*/none/none.json"
-    else:
-        pattern = f"{log_dir}/{model}/{suite}/user_task_*/{attack}/injection_task_*.json"
 
-    files = glob.glob(pattern)
-    if not files:
-        continue
-    utility_scores, security_scores = [], []
-    for f in files:
-        with open(f) as fp:
-            data = json.load(fp)
-        if "utility" in data:
-            utility_scores.append(data["utility"])
-        if "security" in data:
-            security_scores.append(data["security"])
-    results[suite] = {
-        "utility": sum(utility_scores) / len(utility_scores) if utility_scores else "N/A",
-        "security": sum(security_scores) / len(security_scores) if security_scores else "N/A",
-    }
+def run_dir_name(model: str) -> str:
+    """Mirror agentdojo's make_run_name: basename + '+progent' when Progent is on."""
+    name = model.split("/")[-1]
+    if os.getenv("SECAGENT_GENERATE", "True").lower() == "true":
+        name += "+progent"
+    return name
 
-print(f"\n{'Suite':<12} {'Utility':>8} {'Security':>10}")
-print("-" * 32)
-for suite, scores in results.items():
-    print(f"{suite:<12} {str(scores['utility'])[:6]:>8} {str(scores['security'])[:6]:>10}")
 
-u = [v["utility"] for v in results.values() if isinstance(v["utility"], float)]
-s = [v["security"] for v in results.values() if isinstance(v["security"], float)]
-print("-" * 32)
-if u: print(f"{'avg':<12} {sum(u)/len(u):>8.3f}", end="")
-if s: print(f" {sum(s)/len(s):>10.3f}", end="")
-print()
+def summarize(log_dir: str, name: str, attack):
+    results = {}
+    for suite in SUITES:
+        if attack is None:
+            pattern = f"{log_dir}/{name}/{suite}/user_task_*/none/none.json"
+        else:
+            pattern = f"{log_dir}/{name}/{suite}/user_task_*/{attack}/injection_task_*.json"
+        files = glob.glob(pattern)
+        if not files:
+            continue
+        utility_scores, security_scores = [], []
+        for f in files:
+            with open(f) as fp:
+                data = json.load(fp)
+            if "utility" in data:
+                utility_scores.append(data["utility"])
+            if "security" in data:
+                security_scores.append(data["security"])
+        results[suite] = {
+            "utility": sum(utility_scores) / len(utility_scores) if utility_scores else "N/A",
+            "security": sum(security_scores) / len(security_scores) if security_scores else "N/A",
+        }
+    return results
+
+
+def print_table(title: str, results: dict):
+    print(f"\n=== {title} ===")
+    if not results:
+        print("(no logs found)")
+        return
+    print(f"{'Suite':<12} {'Utility':>8} {'Security':>10}")
+    print("-" * 32)
+    for suite, scores in results.items():
+        print(f"{suite:<12} {str(scores['utility'])[:6]:>8} {str(scores['security'])[:6]:>10}")
+    u = [v["utility"] for v in results.values() if isinstance(v["utility"], float)]
+    s = [v["security"] for v in results.values() if isinstance(v["security"], float)]
+    print("-" * 32)
+    line = f"{'avg':<12}"
+    if u:
+        line += f" {sum(u) / len(u):>8.3f}"
+    if s:
+        line += f" {sum(s) / len(s):>10.3f}"
+    print(line)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Summarize AgentDojo results (utility/security per suite).")
+    parser.add_argument("--model", default="Qwen/Qwen3-30B-A3B-Instruct-2507",
+                        help="Model id; basename and the +progent suffix are applied automatically.")
+    parser.add_argument("--name", default=None,
+                        help="Exact run-directory name under --log-dir (overrides --model).")
+    parser.add_argument("--log-dir", default="logs")
+    args = parser.parse_args()
+
+    name = args.name or run_dir_name(args.model)
+    print(f"Results for: {name}")
+    # No-attack (utility) and under-attack (utility + security).
+    for attack, title in [(None, "No attack"), ("important_instructions", "Attack: important_instructions")]:
+        print_table(title, summarize(args.log_dir, name, attack))
