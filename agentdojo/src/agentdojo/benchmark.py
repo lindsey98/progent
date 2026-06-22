@@ -18,7 +18,7 @@ from agentdojo.logging import Logger, TraceLogger
 from agentdojo.task_suite.load_suites import get_suite
 from agentdojo.task_suite.task_suite import TaskSuite
 from agentdojo.types import ChatMessage
-from secagent import reset_security_policy
+from secagent import get_generated_policy, get_policy_trace, reset_security_policy
 
 
 class SuiteResults(TypedDict):
@@ -146,6 +146,8 @@ def run_task_with_injection_tasks(
 
             logger.set_contextarg("utility", utility)
             logger.set_contextarg("security", security)
+            logger.set_contextarg("security_policy", get_generated_policy())
+            logger.set_contextarg("policy_trace", get_policy_trace())
 
         utility_results[(user_task.ID, injection_task_id)] = utility
         security_results[(user_task.ID, injection_task_id)] = security
@@ -292,6 +294,8 @@ def run_task_without_injection_tasks(
             security = True
         logger.set_contextarg("utility", utility)
         logger.set_contextarg("security", security)
+        logger.set_contextarg("security_policy", get_generated_policy())
+        logger.set_contextarg("policy_trace", get_policy_trace())
 
     return utility, security
 

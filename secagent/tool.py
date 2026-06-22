@@ -30,6 +30,10 @@ available_tools = []
 # always_allowed_tools = set()
 security_policy = None  # {"tool_name": [(priority, effect (0: allow; 1: forbid), condition, fallback (0: return msg; 1: terminate; 2: user confirm))]}
 init_user_query = None
+# Per-task trace of policy generation/updates, for logging. Each entry is a dict:
+#   {"step": "generate", "policy": [...]}                       # initial policy
+#   {"step": "update", "expanded": bool, "policy": [...], ...}  # one per tool round
+policy_trace = []
 
 # policy_model = "gpt-4o-2024-08-06"
 # policy_model = "o3-mini-2025-01-31"
@@ -150,6 +154,11 @@ def get_generated_policy() -> List:
     return generated_policy
 
 
+def get_policy_trace() -> List:
+    """Return a copy of the per-task policy generation/update trace."""
+    return copy.deepcopy(policy_trace)
+
+
 def delete_generated_policy() -> None:
     global security_policy
     if security_policy is not None:
@@ -165,6 +174,7 @@ def reset_security_policy(include_human_policy=False) -> None:
         security_policy = None
     else:
         delete_generated_policy()
+    policy_trace.clear()
     print("security policy reset", file=sys.stderr)
 
 
@@ -390,6 +400,7 @@ def generate_security_policy(query: str, manual_check=False) -> None:
     temperature = 0.0
     global init_user_query
     init_user_query = query
+    policy_trace.clear()  # new task
     if not generate_policy:
         print("SECAGENT_GENERATE is set to False, skip generating security policy.", file=sys.stderr)
         return
@@ -416,6 +427,7 @@ def generate_security_policy(query: str, manual_check=False) -> None:
                 if tool_name not in security_policy:
                     security_policy[tool_name] = []
                 security_policy[tool_name].append((100, 0, allowed_tool["args"], 0))
+            policy_trace.append({"step": "generate", "policy": get_generated_policy()})
             print(f"security policy updated: {security_policy}", file=sys.stderr)
             return
         except Exception as e:
@@ -446,6 +458,22 @@ def decide_whether_to_update(tool_call_param) -> bool:
 
 
 def generate_update_security_policy(tool_call_param, tool_call_result, manual_check=True) -> None:
+    """Public entry point: applies a possible policy update for one tool round and
+    records whether the policy was expanded into the per-task trace."""
+    before = get_generated_policy()
+    _apply_security_policy_update(tool_call_param, tool_call_result, manual_check)
+    if not generate_policy:
+        return
+    after = get_generated_policy()
+    policy_trace.append({
+        "step": "update",
+        "tool_call": tool_call_param,
+        "expanded": before != after,
+        "policy": after,
+    })
+
+
+def _apply_security_policy_update(tool_call_param, tool_call_result, manual_check=True) -> None:
     if not generate_policy:
         print("SECAGENT_GENERATE is set to False, skip generating security policy.", file=sys.stderr)
         return
