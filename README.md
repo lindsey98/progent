@@ -13,6 +13,7 @@ the experiment harnesses from the paper.
 | --- | --- |
 | `secagent/` | The **Progent library** — policy generation/update, tool-call checker, integrations. Everything depends on it. |
 | `agentdojo/` | The **[AgentDojo](https://github.com/ethz-spylab/agentdojo) benchmark** + Progent (main benchmark). |
+| `agentdyn/` | The **[AgentDyn](https://github.com/SaFo-Lab/AgentDyn) benchmark** (dynamic `shopping`/`github`/`dailylife` suites, an AgentDojo fork) run with Progent via its `--defense progent`. |
 | `agentdojo-mcp/` | AgentDojo tasks served over **[MCP](https://modelcontextprotocol.io/)** (`mcp_server.py`); the tool server for `real-world-agents/`. |
 | `real-world-agents/` | Drivers running **real frameworks** (OpenAI Agents SDK, LangChain, OpenHands, AutoGen) against `agentdojo-mcp`, with Progent. |
 | `asb/` | The **[Agent Security Bench](https://github.com/agiresearch/ASB)** harness + Progent (separate benchmark). |
@@ -32,10 +33,28 @@ cd agentdojo && pip install -e .    # install the AgentDojo benchmark
 using one model for both the agent and Progent's policy. Set the relevant API key
 first (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `CO_API_KEY`, `GCP_PROJECT`/`GCP_LOCATION`).
 
+## Install & Run (AgentDyn)
+
+AgentDyn is a fork of AgentDojo 0.1.35 whose package is **also named `agentdojo`**,
+so install one benchmark at a time (`pip install -e .` just repoints the editable
+install) — or use separate envs. Its CLI takes the same arguments as AgentDojo's.
+
+```bash
+pip install -r requirements.txt    # secagent deps (once per env)
+cd agentdyn && pip install -e .     # install AgentDyn (replaces an agentdojo install)
+./run.sh                            # shopping/github/dailylife with --defense progent
+```
+
+Progent runs through AgentDyn's built-in `progent` defense, which imports
+`secagent` from this repo root automatically (no `PYTHONPATH` needed). The same
+`SECAGENT_*` variables apply, and the original four AgentDojo suites can also be
+run from this checkout. Results land in `agentdyn/logs/<model>-progent/...`.
+
 ## Locally Served Models (vLLM)
 
 `Qwen/Qwen3-30B-A3B-Instruct-2507`, `Qwen3.6-35B-A3B`, and
-`meta-llama/Llama-3.3-70B-Instruct` are registered as local models. Tool calling is done via prompting, so a plain
+`meta-llama/Llama-3.3-70B-Instruct` are registered as local models (in both
+AgentDojo and AgentDyn). Tool calling is done via prompting, so a plain
 `vllm serve` is enough (no server-side tool-call parser needed):
 
 ```bash
@@ -80,6 +99,8 @@ Results go to `logs/`, keyed by model basename + `+progent` (dropped for baselin
 ```
 # AgentDojo: one JSON per task
 logs/<model>+progent/<suite>/<user_task>/{none/none.json, <attack>/<injection>.json}
+# AgentDyn: same layout, named by AgentDyn's <model>-<defense> convention
+logs/<model>-progent/<suite>/<user_task>/...
 # ASB: under the injection method
 logs/<injection_method>/<model>+progent/...
 ```
