@@ -13,7 +13,7 @@ the experiment harnesses from the paper.
 | --- | --- |
 | `secagent/` | The **Progent library** — policy generation/update, tool-call checker, integrations. Everything depends on it. |
 | `agentdojo/` | The **[AgentDojo](https://github.com/ethz-spylab/agentdojo) benchmark** + Progent (main benchmark). |
-| `agentdyn/` | The **[AgentDyn](https://github.com/SaFo-Lab/AgentDyn) benchmark** (dynamic `shopping`/`github`/`dailylife` suites, an AgentDojo fork) run with Progent via its `--defense progent`. |
+| — | `agentdojo/` also includes the **[AgentDyn](https://github.com/SaFo-Lab/AgentDyn)** dynamic suites (`shopping`, `github`, `dailylife`), integrated with Progent like the original four. |
 | `agentdojo-mcp/` | AgentDojo tasks served over **[MCP](https://modelcontextprotocol.io/)** (`mcp_server.py`); the tool server for `real-world-agents/`. |
 | `real-world-agents/` | Drivers running **real frameworks** (OpenAI Agents SDK, LangChain, OpenHands, AutoGen) against `agentdojo-mcp`, with Progent. |
 | `asb/` | The **[Agent Security Bench](https://github.com/agiresearch/ASB)** harness + Progent (separate benchmark). |
@@ -33,29 +33,29 @@ cd agentdojo && pip install -e .    # install the AgentDojo benchmark
 using one model for both the agent and Progent's policy. Set the relevant API key
 first (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `CO_API_KEY`, `GCP_PROJECT`/`GCP_LOCATION`).
 
-## Install & Run (AgentDyn)
+## AgentDyn Suites (shopping / github / dailylife)
 
-AgentDyn is a fork of AgentDojo 0.1.35 whose package is **also named `agentdojo`**,
-so install one benchmark at a time (`pip install -e .` just repoints the editable
-install) — or use separate envs. Its CLI takes the same arguments as AgentDojo's.
+The [AgentDyn](https://github.com/SaFo-Lab/AgentDyn) dynamic suites are merged
+into `agentdojo/src/agentdojo` — no extra install; the same CLI arguments and
+`SECAGENT_*` variables apply, and their tools are privilege-controlled by
+Progent exactly like the original suites (allowlists follow AgentDyn's official
+Progent integration). Run them by overriding the suite list:
 
 ```bash
-pip install -r requirements.txt    # secagent deps (once per env)
-cd agentdyn && pip install -e .     # install AgentDyn (replaces an agentdojo install)
-./run.sh                            # shopping/github/dailylife with --defense progent
+cd agentdojo
+SUITES="shopping github dailylife" EXTRA_ARGS="--system-message-name agentdyn" ./run.sh
 ```
 
-Progent runs through AgentDyn's built-in `progent` defense, which imports
-`secagent` from this repo root automatically (no `PYTHONPATH` needed). The same
-`SECAGENT_*` variables apply, and the original four AgentDojo suites can also be
-run from this checkout. Results land in `agentdyn/logs/<model>-progent/...`.
+`--system-message-name agentdyn` selects AgentDyn's system message (it appends a
+"complete tasks without asking for confirmation" line); omit it to keep the
+AgentDojo default.
 
 ## Locally Served Models (vLLM)
 
 `Qwen/Qwen3-30B-A3B-Instruct-2507`, `Qwen3.6-35B-A3B`, and
-`meta-llama/Llama-3.3-70B-Instruct` are registered as local models (in both
-AgentDojo and AgentDyn). Tool calling is done via prompting, so a plain
-`vllm serve` is enough (no server-side tool-call parser needed):
+`meta-llama/Llama-3.3-70B-Instruct` are registered as local models. Tool calling
+is done via prompting, so a plain `vllm serve` is enough (no server-side
+tool-call parser needed):
 
 ```bash
 # 1. Serve the model (adjust --tensor-parallel-size to your GPUs)
@@ -97,10 +97,8 @@ names use the `local` backend (OpenAI-compatible, `LOCAL_BASE_URL`).
 Results go to `logs/`, keyed by model basename + `+progent` (dropped for baselines):
 
 ```
-# AgentDojo: one JSON per task
+# AgentDojo (incl. the AgentDyn suites): one JSON per task
 logs/<model>+progent/<suite>/<user_task>/{none/none.json, <attack>/<injection>.json}
-# AgentDyn: same layout, named by AgentDyn's <model>-<defense> convention
-logs/<model>-progent/<suite>/<user_task>/...
 # ASB: under the injection method
 logs/<injection_method>/<model>+progent/...
 ```

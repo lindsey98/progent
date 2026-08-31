@@ -3,7 +3,7 @@ import glob
 import json
 import os
 
-SUITES = ["banking", "slack", "travel", "workspace"]
+DEFAULT_SUITES = ["banking", "slack", "travel", "workspace"]
 
 
 def run_dir_name(model: str) -> str:
@@ -14,9 +14,9 @@ def run_dir_name(model: str) -> str:
     return name
 
 
-def summarize(log_dir: str, name: str, attack):
+def summarize(log_dir: str, name: str, attack, suites):
     results = {}
-    for suite in SUITES:
+    for suite in suites:
         if attack is None:
             pattern = f"{log_dir}/{name}/{suite}/user_task_*/none/none.json"
         else:
@@ -66,10 +66,12 @@ if __name__ == "__main__":
     parser.add_argument("--name", default=None,
                         help="Exact run-directory name under --log-dir (overrides --model).")
     parser.add_argument("--log-dir", default="logs")
+    parser.add_argument("--suites", nargs="+", default=DEFAULT_SUITES,
+                        help="Suites to summarize (e.g. shopping github dailylife for AgentDyn).")
     args = parser.parse_args()
 
     name = args.name or run_dir_name(args.model)
     print(f"Results for: {name}")
     # No-attack (utility) and under-attack (utility + security).
     for attack, title in [(None, "No attack"), ("important_instructions", "Attack: important_instructions")]:
-        print_table(title, summarize(args.log_dir, name, attack))
+        print_table(title, summarize(args.log_dir, name, attack, args.suites))

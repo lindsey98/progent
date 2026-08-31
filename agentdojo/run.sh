@@ -19,13 +19,18 @@ export SECAGENT_POLICY_MODEL="$model"
 export SECAGENT_UPDATE="True"
 export SECAGENT_IGNORE_UPDATE_ERROR="True"
 
-for suite in banking slack travel workspace; do
-    SECAGENT_SUITE=$suite python -m agentdojo.scripts.benchmark -s $suite --model "$model" --logdir $log_dir &
-    SECAGENT_SUITE=$suite python -m agentdojo.scripts.benchmark -s $suite --model "$model" --attack important_instructions --logdir $log_dir &
+# AgentDojo suites (default). For the AgentDyn dynamic suites use:
+#   suites="shopping github dailylife"; extra_args="--system-message-name agentdyn"
+suites="${SUITES:-banking slack travel workspace}"
+extra_args="${EXTRA_ARGS:-}"
+
+for suite in $suites; do
+    SECAGENT_SUITE=$suite python -m agentdojo.scripts.benchmark -s $suite --model "$model" $extra_args --logdir $log_dir &
+    SECAGENT_SUITE=$suite python -m agentdojo.scripts.benchmark -s $suite --model "$model" $extra_args --attack important_instructions --logdir $log_dir &
 done
 wait
 
 echo "all done"
 
 # Print utility/security for both the no-attack and important_instructions runs.
-python print_results.py --model "$model" --log-dir "$log_dir"
+python print_results.py --model "$model" --log-dir "$log_dir" --suites $suites
