@@ -30,6 +30,10 @@ available_tools = []
 # always_allowed_tools = set()
 security_policy = None  # {"tool_name": [(priority, effect (0: allow; 1: forbid), condition, fallback (0: return msg; 1: terminate; 2: user confirm))]}
 init_user_query = None
+# Per-task trace of policy generation/updates, for logging. Each entry is a dict:
+#   {"step": "generate", "policy": [...]}                       # initial policy
+#   {"step": "update", "expanded": bool, "policy": [...], ...}  # one per tool round
+policy_trace = []
 
 # policy_model = "gpt-4o-2024-08-06"
 # policy_model = "o3-mini-2025-01-31"
@@ -43,6 +47,14 @@ print(f"Policy Model: {policy_model}", file=sys.stderr)
 ignore_update_error = os.getenv("SECAGENT_IGNORE_UPDATE_ERROR", "False").lower() == "true"
 generate_policy = os.getenv('SECAGENT_GENERATE', "True").lower() == "true"
 enable_secagent = os.getenv("ENABLE_SECAGENT", "False").lower() == "true"
+
+
+def is_local_policy_model() -> bool:
+    """True when the policy model is served locally via an OpenAI-compatible
+    server (e.g. vLLM): anything that is not a hosted OpenAI/Claude/Gemini/Vertex
+    model. Covers names like ``Qwen3-30B-A3B-Instruct-2507``,
+    ``Llama-3.3-70B-Instruct``, ``meta-llama/*``, ``Qwen/*``, ``deepseek-ai/*``."""
+    return not policy_model.startswith(("gpt", "o1", "o3", "claude", "gemini", "vertex_ai/"))
 
 
 class Tool(TypedDict):
@@ -142,6 +154,11 @@ def get_generated_policy() -> List:
     return generated_policy
 
 
+def get_policy_trace() -> List:
+    """Return a copy of the per-task policy generation/update trace."""
+    return copy.deepcopy(policy_trace)
+
+
 def delete_generated_policy() -> None:
     global security_policy
     if security_policy is not None:
@@ -157,6 +174,7 @@ def reset_security_policy(include_human_policy=False) -> None:
         security_policy = None
     else:
         delete_generated_policy()
+    policy_trace.clear()
     print("security policy reset", file=sys.stderr)
 
 
@@ -199,7 +217,9 @@ def api_request(sys_prompt, user_prompt, temperature=0.0) -> None:
         )
         return response.text
     from openai import OpenAI
-    if policy_model.startswith("meta-llama/") or policy_model.startswith("Qwen/"):
+    # Locally served models (Qwen3-..., Llama-3.3-..., meta-llama/*, Qwen/*, ...)
+    # use an OpenAI-compatible local server; hosted OpenAI models use the API.
+    if is_local_policy_model():
         client = OpenAI(
             base_url=os.getenv("SECAGENT_POLICY_BASE_URL", "http://127.0.0.1:8000/v1"),
             api_key=os.getenv("SECAGENT_POLICY_API_KEY", "EMPTY"),
@@ -309,7 +329,7 @@ def get_SYS_PROMPT() -> str:
     else:
         sys_prompt = SYS_PROMPT
     output_formater = ""
-    if policy_model.startswith("o1") or policy_model.startswith("o3") or policy_model.startswith("gpt-4.1") or policy_model.startswith("gemini") or policy_model.startswith("meta-llama/") or policy_model.startswith("Qwen/") or policy_model.startswith("vertex_ai/gemini"):
+    if policy_model.startswith("o1") or policy_model.startswith("o3") or policy_model.startswith("gpt-4.1") or policy_model.startswith("gemini") or is_local_policy_model() or policy_model.startswith("vertex_ai/gemini"):
         output_formater = "\nOutput format: ```json [{\"name\": tool_name, \"args\": restrictions}, ...] ```"
     if policy_model.startswith("claude") or policy_model.startswith("vertex_ai/claude"):
         sys_prompt = sys_prompt[:-1]
@@ -369,7 +389,7 @@ def get_SYS_PROMPT_2() -> str:
     if policy_model.startswith("gpt-4o-mini"):
         sys_prompt = sys_prompt[:-1]
         output_formater = " with json block. It should be an array of dictionaries like {\"name\": tool_name, \"args\": restrictions}."
-    if policy_model.startswith("gemini") or policy_model.startswith("meta-llama/") or policy_model.startswith("Qwen/"):
+    if policy_model.startswith("gemini") or is_local_policy_model():
         sys_prompt = sys_prompt[:-1]
         output_formater = " with json code block. It should be an array of dictionaries like {\"name\": tool_name, \"args\": restrictions}."
     return sys_prompt+output_formater
@@ -380,6 +400,7 @@ def generate_security_policy(query: str, manual_check=False) -> None:
     temperature = 0.0
     global init_user_query
     init_user_query = query
+    policy_trace.clear()  # new task
     if not generate_policy:
         print("SECAGENT_GENERATE is set to False, skip generating security policy.", file=sys.stderr)
         return
@@ -406,6 +427,7 @@ def generate_security_policy(query: str, manual_check=False) -> None:
                 if tool_name not in security_policy:
                     security_policy[tool_name] = []
                 security_policy[tool_name].append((100, 0, allowed_tool["args"], 0))
+            policy_trace.append({"step": "generate", "policy": get_generated_policy()})
             print(f"security policy updated: {security_policy}", file=sys.stderr)
             return
         except Exception as e:
@@ -436,6 +458,22 @@ def decide_whether_to_update(tool_call_param) -> bool:
 
 
 def generate_update_security_policy(tool_call_param, tool_call_result, manual_check=True) -> None:
+    """Public entry point: applies a possible policy update for one tool round and
+    records whether the policy was expanded into the per-task trace."""
+    before = get_generated_policy()
+    _apply_security_policy_update(tool_call_param, tool_call_result, manual_check)
+    if not generate_policy:
+        return
+    after = get_generated_policy()
+    policy_trace.append({
+        "step": "update",
+        "tool_call": tool_call_param,
+        "expanded": before != after,
+        "policy": after,
+    })
+
+
+def _apply_security_policy_update(tool_call_param, tool_call_result, manual_check=True) -> None:
     if not generate_policy:
         print("SECAGENT_GENERATE is set to False, skip generating security policy.", file=sys.stderr)
         return

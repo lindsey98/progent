@@ -20,6 +20,15 @@ the experiment harnesses from the paper.
 `agentdojo-mcp/` (server) **+** `real-world-agents/` (agents) are two halves of
 one MCP setup. `agentdojo/` and `asb/` are standalone benchmarks.
 
+### Set up a virtual environment
+
+```bash
+# or with conda
+conda create -n progent python=3.10 -y
+conda activate progent
+```
+
+
 ## Installation
 
 `secagent` (this repo) is **not** installed as a package — install only its
@@ -48,17 +57,13 @@ keys first: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `CO_API_KEY` (Cohere),
 
 ## Locally Served Models (vLLM)
 
-`Qwen/Qwen3-30B-A3B-Instruct-2507` and `meta-llama/Llama-3.3-70B-Instruct` are
-registered as local models. Tool calling is done via prompting, so a plain
+`Qwen/Qwen3-30B-A3B-Instruct-2507`, `Qwen3.6-35B-A3B`, and
+`meta-llama/Llama-3.3-70B-Instruct` are registered as local models. Tool calling is done via prompting, so a plain
 `vllm serve` is enough (no server-side tool-call parser needed):
 
 ```bash
 # 1. Serve the model (adjust --tensor-parallel-size to your GPUs)
 vllm serve Qwen/Qwen3-30B-A3B-Instruct-2507 --port 8000 --gpu-memory-utilization 0.95
-
-# 2. Use it in agentdojo/run.sh (already the default there):
-#    model="Qwen/Qwen3-30B-A3B-Instruct-2507"
-#    (SECAGENT_POLICY_MODEL is set to the same model)
 ```
 
 If the server is not on `localhost:8000`, set `LOCAL_MODEL_BASE_URL` (agent) and
@@ -67,13 +72,14 @@ If the server is not on `localhost:8000`, set `LOCAL_MODEL_BASE_URL` (agent) and
 ## Progent Settings
 
 Configured via environment variables (see `agentdojo/run.sh` for typical values).
-**Privilege control is ON by default** — `SECAGENT_GENERATE` and `SECAGENT_UPDATE`
-both default to `True`.
+**Policy generation is ON by default** (`SECAGENT_GENERATE=True`); **policy
+auto-update is OFF by default** in the AgentDojo benchmark — `run.sh` enables it
+explicitly with `SECAGENT_UPDATE=True`.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `SECAGENT_GENERATE` | `True` | Generate a security policy per task. `False` = plain baseline (no Progent). |
-| `SECAGENT_UPDATE` | `True` | Allow the policy to be updated during a task. |
+| `SECAGENT_UPDATE` | `False`* | Update the policy during a task. *The AgentDojo update gate defaults to off; `run.sh` sets it to `True`. |
 | `SECAGENT_POLICY_MODEL` | `gpt-4o-2024-08-06` | Model used to generate/update the policy (hosted or local). |
 | `SECAGENT_IGNORE_UPDATE_ERROR` | `False` | Keep running if a policy update fails to parse. |
 | `SECAGENT_ONLY_ALLOW_NARROW` | `False` | Only allow narrowly-scoped (stricter) policies. |
