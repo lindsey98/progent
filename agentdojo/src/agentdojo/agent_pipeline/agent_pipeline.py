@@ -153,6 +153,12 @@ def get_llm(provider: str, model: str, model_id: str | None, tool_delimiter: str
         logging.info(f"Using local model: {model_id}")
         logging.info(f"Using tool delimiter: {tool_delimiter}")
         llm = LocalLLM(client, model_id, tool_delimiter=tool_delimiter)
+    elif provider == "vllm":
+        client = openai.OpenAI(
+            api_key=os.getenv("LOCAL_API_KEY", "EMPTY"),
+            base_url=os.getenv("LOCAL_BASE_URL", "http://localhost:8000/v1"),
+        )
+        llm = OpenAILLM(client, model)
     elif provider == "vllm_parsed":
         port = os.getenv("LOCAL_LLM_PORT", 8000)
         client = openai.OpenAI(
