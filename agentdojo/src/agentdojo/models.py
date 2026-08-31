@@ -24,6 +24,8 @@ class ModelsEnum(StrEnum):
     """Claude 3.5 Sonnet October"""
     CLAUDE_3_7_SONNET_20250219 = "claude-3-7-sonnet-20250219"
     """Claude 3.7 Sonnet"""
+    CLAUDE_3_7_SONNET_20250219_THINKING_16000 = "claude-3-7-sonnet-20250219-thinking-16000"
+    """Claude 3.7 Sonnet"""
     CLAUDE_SONNET_4_5_20250929 = "claude-sonnet-4-5-20250929"
     """Claude Sonnet 4.5"""
     CLAUDE_3_5_HAIKU_20241022 = "claude-3-5-haiku-20241022"
@@ -73,6 +75,18 @@ class ModelsEnum(StrEnum):
     """Gemini 1.5 Flash 002"""
     GEMINI_1_5_FLASH_001 = "gemini-1.5-flash-001"
     """Gemini 1.5 Flash 001"""
+    GEMINI_2_0_FLASH_EXP = "gemini-2.0-flash-exp"
+    """Gemini 2.0 Flash Exp"""
+    GEMINI_2_0_FLASH_001 = "gemini-2.0-flash-001"
+    """Gemini 2.0 Flash 001"""
+    GEMINI_2_5_FLASH_PREVIEW_04_17 = "gemini-2.5-flash-preview-04-17"
+    """Gemini 2.5 Flash Preview 04/17"""
+    GEMINI_2_5_PRO_PREVIEW_05_06 = "gemini-2.5-pro-preview-05-06"
+    """Gemini 2.5 Pro Preview 05/06"""
+    LOCAL = "local"
+    """Local model"""
+    VLLM_PARSED = "vllm_parsed"
+    """VLLM parsed model"""
     HERMES_8B = "NousResearch/Hermes-3-Llama-3.1-8B"
     """Hermes 3 Llama-3.1-8B"""
     GRANITE_8B = "ibm-granite/granite-3.2-8b-instruct"
@@ -89,9 +103,10 @@ MODEL_PROVIDERS = {
     ModelsEnum.CLAUDE_3_SONNET_20240229: "anthropic",
     ModelsEnum.CLAUDE_3_5_SONNET_20240620: "anthropic",
     ModelsEnum.CLAUDE_3_5_SONNET_20241022: "anthropic",
+    ModelsEnum.CLAUDE_3_7_SONNET_20250219: "anthropic",
+    ModelsEnum.CLAUDE_3_7_SONNET_20250219_THINKING_16000: "anthropic",
     ModelsEnum.CLAUDE_3_5_HAIKU_20241022: "anthropic",
     ModelsEnum.CLAUDE_3_HAIKU_20240307: "anthropic",
-    ModelsEnum.CLAUDE_3_7_SONNET_20250219: "anthropic",
     ModelsEnum.CLAUDE_SONNET_4_5_20250929: "anthropic",
     ModelsEnum.COMMAND_R_PLUS: "cohere",
     ModelsEnum.COMMAND_R: "cohere",
@@ -115,6 +130,12 @@ MODEL_PROVIDERS = {
     ModelsEnum.GEMINI_1_5_PRO_002: "google",
     ModelsEnum.GEMINI_1_5_FLASH_001: "google",
     ModelsEnum.GEMINI_1_5_FLASH_002: "google",
+    ModelsEnum.GEMINI_2_0_FLASH_EXP: "google",
+    ModelsEnum.GEMINI_2_0_FLASH_001: "google",
+    ModelsEnum.GEMINI_2_5_FLASH_PREVIEW_04_17: "google",
+    ModelsEnum.GEMINI_2_5_PRO_PREVIEW_05_06: "google",
+    ModelsEnum.LOCAL: "local",
+    ModelsEnum.VLLM_PARSED: "vllm_parsed",
     ModelsEnum.HERMES_8B: "nousresearch",
     ModelsEnum.GRANITE_8B: "ibm",
 }
@@ -130,9 +151,10 @@ MODEL_NAMES = {
     "claude-3-sonnet-20240229": "Claude",
     "claude-3-5-sonnet-20240620": "Claude",
     "claude-3-5-sonnet-20241022": "Claude",
+    "claude-3-7-sonnet-20250219": "Claude",
+    "claude-3-7-sonnet-20250219-thinking-16000": "Claude",
     "claude-3-5-haiku-20241022": "Claude",
     "claude-3-haiku-20240307": "Claude",
-    "claude-3-7-sonnet-20250219": "Claude",
     "claude-sonnet-4-5-20250929": "Claude",
     "command-r-plus": "Command R+",
     "command-r": "Command R",
@@ -156,6 +178,12 @@ MODEL_NAMES = {
     "gemini-1.5-pro-001": "AI model developed by Google",
     "gemini-1.5-flash-002": "AI model developed by Google",
     "gemini-1.5-flash-001": "AI model developed by Google",
+    "gemini-2.0-flash-exp": "AI model developed by Google",
+    "gemini-2.0-flash-001": "AI model developed by Google",
+    "gemini-2.5-flash-preview-04-17": "AI model developed by Google",
+    "gemini-2.5-pro-preview-05-06": "AI model developed by Google",
+    "local": "Local model",
+    "vllm_parsed": "Local model",
     "NousResearch/Hermes-3-Llama-3.1-8B": "AI assistant",
     "ibm-granite/granite-3.2-8b-instruct": "AI model developed by IBM",
 }

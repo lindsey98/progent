@@ -1,7 +1,7 @@
 import argparse, json, glob, os
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", default="Qwen3-30B-A3B-Instruct-2507")
+parser.add_argument("--model", default="Qwen3.6-35B-A3B")
 parser.add_argument("--log-dir", default="logs")
 parser.add_argument("--attack", default="important_instructions")
 args = parser.parse_args()
@@ -15,10 +15,10 @@ attack = args.attack
 
 results = {}
 for suite in ["banking", "slack", "travel", "workspace"]:
-    if attack is None:
-        pattern = f"{log_dir}/{model}/{suite}/user_task_*/none/none.json"
-    else:
-        pattern = f"{log_dir}/{model}/{suite}/user_task_*/{attack}/injection_task_*.json"
+    # if attack is None:
+    pattern = f"{log_dir}/{model}/{suite}/user_task_*/none/none.json"
+    # else:
+    #     pattern = f"{log_dir}/{model}/{suite}/user_task_*/{attack}/injection_task_*.json"
 
     files = glob.glob(pattern)
     if not files:

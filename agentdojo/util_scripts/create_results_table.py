@@ -9,7 +9,7 @@ import pandas as pd
 from agentdojo.benchmark import load_suite_results
 from agentdojo.models import MODEL_PROVIDERS
 from agentdojo.task_suite import get_suites
-from agentdojo.types import ChatMessage
+from agentdojo.types import ChatMessage, get_text_content_as_str
 
 
 def find_information_tags(text: str) -> list[tuple[int, int, int]]:
@@ -22,7 +22,7 @@ def get_injection_position_in_tool_outputs(messages: list[ChatMessage]) -> list[
     injection_positions = []
     for message in messages:
         if message["role"] == "tool":
-            matches = find_information_tags(message["content"])
+            matches = find_information_tags(get_text_content_as_str(message["content"]))
             if len(matches) == 0:
                 continue
             injection_positions.append(matches)
@@ -113,7 +113,7 @@ TABLE_MODELS = [
     EvalInfo(
         "claude-3-7-sonnet-20250219",
         datetime.date(2025, 2, 24),
-        traceuid="invariant/agentdojo-claude-3-7-sonnet-20250219",
+        traceuid=None,
     ),
     EvalInfo(
         "claude-3-5-sonnet-20241022",
@@ -202,8 +202,8 @@ TABLE_MODELS = [
     EvalInfo("gemini-1.5-pro-001", datetime.date(2024, 6, 5), traceuid="invariant/agentdojo-gemini-1-5-pro-001"),
     EvalInfo("gemini-1.5-flash-002", datetime.date(2024, 11, 5), traceuid="invariant/agentdojo-gemini-1-5-flash-002"),
     EvalInfo("gemini-1.5-flash-001", datetime.date(2024, 6, 5), traceuid="invariant/agentdojo-gemini-1-5-flash-001"),
-    EvalInfo("gemini-2.0-flash-exp", datetime.date(2024, 12, 11), traceuid="invariant/agentdojo-gemini-2.0-flash-exp"),
-    EvalInfo("gemini-2.0-flash-001", datetime.date(2025, 1, 30), traceuid="invariant/agentdojo-gemini-2.0-flash-001"),
+    EvalInfo("gemini-2.0-flash-exp", datetime.date(2024, 12, 11), traceuid=None),
+    EvalInfo("gemini-2.0-flash-001", datetime.date(2025, 1, 30), traceuid=None),
 ]
 
 
@@ -256,7 +256,8 @@ def main(logdir: Path, benchmark_version: str) -> None:
 
     # render traceuid s as links
     def traceurl_formatter(traceuid: str) -> str:
-        if traceuid is None:
+        # check for pandas nan
+        if traceuid is None or str(traceuid) == "nan":
             return ""
         return f'<a style="font-size: 12pt;" href="https://explorer.invariantlabs.ai/u/{traceuid}/t/1" target="_blank">Explore &rarr;</a>'
 
