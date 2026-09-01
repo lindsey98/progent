@@ -50,6 +50,29 @@ SUITES="shopping github dailylife" EXTRA_ARGS="--system-message-name agentdyn" .
 "complete tasks without asking for confirmation" line); omit it to keep the
 AgentDojo default.
 
+## ChatInject Attack
+
+[ChatInject](https://github.com/hwanchang00/ChatInject) injects fake chat-template
+turns (role-confusion) in the target model's tokenizer format. It is registered
+as extra `--attack` options in AgentDojo:
+
+| `--attack` | What it does |
+| --- | --- |
+| `chat_inject_qwen3` / `chat_inject_glm` | Single fake system+user+assistant turn in the Qwen3 / GLM-4.5 template. |
+| `chat_inject_{qwen3,glm}_with_utility_system_multiturn_7` | Prepends a 7-turn "utility" dialogue reconstructed in that template. |
+| `chat_inject_{qwen3,glm}_with_utility_authority_endorsement_system_multiturn_7` | Same, in the authority-endorsement persuasion style. |
+
+```bash
+cd agentdojo
+python -m agentdojo.scripts.benchmark -s banking --model "$model" --attack chat_inject_qwen3
+```
+
+The multi-turn variants read pre-generated dialogues from
+`src/agentdojo/attacks/chatinject_data/*.json`, keyed by exact injection-task
+`GOAL`. That data covers **banking / slack / travel only**; an uncovered GOAL
+(all of workspace/shopping, and one re-registered travel task) raises a
+`ValueError`. The single-turn variants have no such restriction.
+
 ## Locally Served Models (vLLM)
 
 `Qwen/Qwen3-30B-A3B-Instruct-2507`, `Qwen3.6-35B-A3B`, and
