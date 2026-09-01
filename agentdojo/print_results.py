@@ -3,7 +3,7 @@ import glob
 import json
 import os
 
-DEFAULT_SUITES = ["banking", "slack", "travel", "workspace"]
+DEFAULT_SUITES = ["banking", "slack", "travel", "workspace", "github", "shopping", "dailylife"]
 
 
 def run_dir_name(model: str) -> str:

@@ -21,7 +21,7 @@ export SECAGENT_IGNORE_UPDATE_ERROR="True"
 
 # AgentDojo suites (default). For the AgentDyn dynamic suites use:
 #   suites="shopping github dailylife"; extra_args="--system-message-name agentdyn"
-suites="${SUITES:-banking slack travel workspace}"
+suites="${SUITES:-banking slack travel workspace shopping github dailylife}"
 extra_args="${EXTRA_ARGS:-}"
 
 for suite in $suites; do
