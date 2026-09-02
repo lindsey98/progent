@@ -121,8 +121,13 @@ attacker tool) — `import secagent` resolves from the repo root, which the scri
 puts on `PYTHONPATH`. `--defense_type camel` (CaMeL) additionally needs the CaMeL
 kernel (`src.camel`) from the camel-prompt-injection repo, so run CaMeL there;
 Progent and the baseline run from this repo as-is. Per-task AgentDojo `TaskResults`
-JSON (with the generated `security_policy`/`policy_trace`) lands under
-`asb/logs/observation_prompt_injection/<model>/<defense>/json/...`.
+JSON (with the generated `security_policy`/`policy_trace`) lands under an
+AgentDojo-style pipeline dir —
+`asb/logs/observation_prompt_injection/json/<model>[+<defense>]/<workflow>_<attacked|clean>/<agent>/...`
+(e.g. `.../json/Qwen3.6-35B-A3B+progent/react_attacked/...`). Runs resume by
+default (existing traces are skipped, their metrics reused); `FORCE_RERUN=1`
+recomputes. `scripts/analyze.py --baseline react_baseline --defense progent`
+aggregates ASR/utility/refuse and diffs baseline vs. defense per case.
 
 ## Logs
 
