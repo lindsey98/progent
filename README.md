@@ -16,7 +16,6 @@ the experiment harnesses from the paper.
 | — | `agentdojo/` also includes the **[AgentDyn](https://github.com/SaFo-Lab/AgentDyn)** dynamic suites (`shopping`, `github`, `dailylife`), integrated with Progent like the original four. |
 | `agentdojo-mcp/` | AgentDojo tasks served over **[MCP](https://modelcontextprotocol.io/)** (`mcp_server.py`); the tool server for `real-world-agents/`. |
 | `real-world-agents/` | Drivers running **real frameworks** (OpenAI Agents SDK, LangChain, OpenHands, AutoGen) against `agentdojo-mcp`, with Progent. |
-| `asb/` | The **[Agent Security Bench](https://github.com/agiresearch/ASB)** harness + Progent (separate benchmark). |
 
 ## Install & Run (AgentDojo)
 
@@ -102,41 +101,16 @@ Privilege control is **on by default**; `run.sh` shows typical values.
 ## Other Benchmarks
 
 ```bash
-# ASB -- Observation Prompt Injection (OPI) slice, on a locally-served model.
-cd asb && pip install -r requirements-opi.txt
-export MODEL=Qwen3.6-35B-A3B            # must match the vLLM --served-model-name
-bash scripts/run_opi.sh progent         # Progent defense  (""=baseline, camel=CaMeL)
-
 # Real-world agents: start the MCP server, then a framework driver
 cd agentdojo-mcp && pip install -e . && export PYTHONPATH="$PWD/..:$PYTHONPATH" && python mcp_server.py
 cd real-world-agents && pip install -r requirements.txt && export PYTHONPATH="$PWD/..:$PYTHONPATH" && ./run.sh
 ```
 
-The `asb/` harness is the ASB **OPI slice** (from ASB, with a ReAct tool-calling
-mode + AgentDojo-format output). `run_opi.sh` runs it on an OpenAI-compatible
-endpoint (`LOCAL_BASE_URL`/`LOCAL_API_KEY`); pick the defense with its first
-argument. **Progent** is wired as `--defense_type progent`: it builds a per-task
-policy and blocks every tool call the policy disallows (incl. the injected
-attacker tool) — `import secagent` resolves from the repo root, which the script
-puts on `PYTHONPATH`. `--defense_type camel` (CaMeL) additionally needs the CaMeL
-kernel (`src.camel`) from the camel-prompt-injection repo, so run CaMeL there;
-Progent and the baseline run from this repo as-is. Per-task AgentDojo `TaskResults`
-JSON (with the generated `security_policy`/`policy_trace`) nests like AgentDojo
-under a per-run top dir — `asb/logs/<model>[+<defense>]/<agent>/<user_task>/<attack|none>/<injection|none>.json`
-(e.g. `logs/Qwen3.6-35B-A3B+progent/financial_analyst/<task>/context_ignoring/<attacker>.json`;
-`run_opi.sh` bakes the `<model>+<defense>` dir via `--log_dir`). Runs resume by
-default (existing traces are skipped, their metrics reused); `FORCE_RERUN=1`
-recomputes. A dedicated `scripts/run_clean.sh progent` measures benign-task
-utility (`.../none/none.json`), and `scripts/analyze.py --baseline <model>_nodefense
---defense <model>+progent` aggregates ASR/utility/refuse and diffs per case.
-
 ## Logs
 
-Results go to `logs/`, keyed by model basename + `+progent` (dropped for baselines):
+AgentDojo (incl. the AgentDyn suites) writes one JSON per task, keyed by model
+basename + `+progent` (dropped for baselines):
 
 ```
-# AgentDojo (incl. the AgentDyn suites): one JSON per task
 logs/<model>+progent/<suite>/<user_task>/{none/none.json, <attack>/<injection>.json}
-# ASB: under the injection method
-logs/<injection_method>/<model>+progent/...
 ```
