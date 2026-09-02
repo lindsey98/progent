@@ -121,13 +121,14 @@ attacker tool) — `import secagent` resolves from the repo root, which the scri
 puts on `PYTHONPATH`. `--defense_type camel` (CaMeL) additionally needs the CaMeL
 kernel (`src.camel`) from the camel-prompt-injection repo, so run CaMeL there;
 Progent and the baseline run from this repo as-is. Per-task AgentDojo `TaskResults`
-JSON (with the generated `security_policy`/`policy_trace`) lands under an
-AgentDojo-style pipeline dir —
-`asb/logs/observation_prompt_injection/json/<model>[+<defense>]/<workflow>_<attacked|clean>/<agent>/...`
-(e.g. `.../json/Qwen3.6-35B-A3B+progent/react_attacked/...`). Runs resume by
+JSON (with the generated `security_policy`/`policy_trace`) nests like AgentDojo
+under a per-run top dir — `asb/logs/<model>[+<defense>]/<agent>/<user_task>/<attack|none>/<injection|none>.json`
+(e.g. `logs/Qwen3.6-35B-A3B+progent/financial_analyst/<task>/context_ignoring/<attacker>.json`;
+`run_opi.sh` bakes the `<model>+<defense>` dir via `--log_dir`). Runs resume by
 default (existing traces are skipped, their metrics reused); `FORCE_RERUN=1`
-recomputes. `scripts/analyze.py --baseline react_baseline --defense progent`
-aggregates ASR/utility/refuse and diffs baseline vs. defense per case.
+recomputes. A dedicated `scripts/run_clean.sh progent` measures benign-task
+utility (`.../none/none.json`), and `scripts/analyze.py --baseline <model>_nodefense
+--defense <model>+progent` aggregates ASR/utility/refuse and diffs per case.
 
 ## Logs
 
