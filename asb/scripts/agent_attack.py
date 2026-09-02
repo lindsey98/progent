@@ -24,23 +24,17 @@ if __name__ == '__main__':
             for attack_type in attack_types:
                 if llm.startswith('gpt') or llm.startswith('gemini') or llm.startswith('claude'):
                     llm_name = llm
-                    backend = None
+                    backend=None
                 elif llm.startswith('ollama'):
                     llm_name = llm.split('/')[-1]
-                    backend = 'ollama'
+                    backend='ollama'
                 else:
-                    # Locally served open-weight models behind an OpenAI-compatible
-                    # server (e.g. `vllm serve ... --port 8000`), reached via LOCAL_BASE_URL.
-                    # Examples: meta-llama/Llama-3.3-70B-Instruct, Qwen/Qwen3-30B-A3B-Instruct-2507.
-                    llm_name = llm.split('/')[-1]
-                    backend = 'local'
+                    # Locally-served model (e.g. vLLM OpenAI-compatible endpoint). The name is the
+                    # vLLM --served-model-name; routed to the LocalLLM backend via LOCAL_BASE_URL.
+                    llm_name = llm
+                    backend='local'
 
-                # Append "+progent" when Progent privilege control is enabled, mirroring
-                # the AgentDojo log layout (logs/<model>+progent/...).
-                progent_on = os.getenv("SECAGENT_GENERATE", "True").lower() == "true"
-                model_dir = f"{llm_name}+progent" if progent_on else llm_name
-
-                log_path = f'logs/{injection_method}/{model_dir}'
+                log_path = f'logs/{injection_method}/{llm_name}'
                 database = f'memory_db/direct_prompt_injection/{attack_type}_gpt-4o-mini'
 
                 if attack_tool_type == 'all':

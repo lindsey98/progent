@@ -102,18 +102,27 @@ Privilege control is **on by default**; `run.sh` shows typical values.
 ## Other Benchmarks
 
 ```bash
-# ASB
-cd asb && pip install -r requirements.txt
-export PYTHONPATH="$PWD/..:$PYTHONPATH"
-python scripts/agent_attack.py --cfg_path config/OPI.yml
+# ASB -- Observation Prompt Injection (OPI) slice, on a locally-served model.
+cd asb && pip install -r requirements-opi.txt
+export MODEL=Qwen3.6-35B-A3B            # must match the vLLM --served-model-name
+bash scripts/run_opi.sh progent         # Progent defense  (""=baseline, camel=CaMeL)
 
 # Real-world agents: start the MCP server, then a framework driver
 cd agentdojo-mcp && pip install -e . && export PYTHONPATH="$PWD/..:$PYTHONPATH" && python mcp_server.py
 cd real-world-agents && pip install -r requirements.txt && export PYTHONPATH="$PWD/..:$PYTHONPATH" && ./run.sh
 ```
 
-For ASB, list a served model under `llms:` in the config; non gpt/gemini/claude/ollama
-names use the `local` backend (OpenAI-compatible, `LOCAL_BASE_URL`).
+The `asb/` harness is the ASB **OPI slice** (from ASB, with a ReAct tool-calling
+mode + AgentDojo-format output). `run_opi.sh` runs it on an OpenAI-compatible
+endpoint (`LOCAL_BASE_URL`/`LOCAL_API_KEY`); pick the defense with its first
+argument. **Progent** is wired as `--defense_type progent`: it builds a per-task
+policy and blocks every tool call the policy disallows (incl. the injected
+attacker tool) — `import secagent` resolves from the repo root, which the script
+puts on `PYTHONPATH`. `--defense_type camel` (CaMeL) additionally needs the CaMeL
+kernel (`src.camel`) from the camel-prompt-injection repo, so run CaMeL there;
+Progent and the baseline run from this repo as-is. Per-task AgentDojo `TaskResults`
+JSON (with the generated `security_policy`/`policy_trace`) lands under
+`asb/logs/observation_prompt_injection/<model>/<defense>/json/...`.
 
 ## Logs
 

@@ -157,3 +157,6 @@ cython_debug/
 memory_db/pre
 pyopenagi/api_key.py
 .env.example
+
+# ASB run outputs
+logs/

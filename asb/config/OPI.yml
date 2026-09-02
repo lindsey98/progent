@@ -5,26 +5,25 @@ attack_tool:
   # - non-agg
 
 llms:
+  # Locally-served model via vLLM (OpenAI-compatible). Must match the vLLM --served-model-name.
+  # Reached through LOCAL_BASE_URL / LOCAL_API_KEY (defaults http://localhost:8000/v1, "EMPTY").
+  - Qwen3-30B-A3B-Instruct-2507
   # - gpt-4o-mini
-  # - gpt-3.5-turbo
-  - gpt-4o-2024-08-06
-  # - claude-3-5-sonnet-20240620
-  # - ollama/qwen2:72b
-  # - ollama/qwen2:7b
-  # - ollama/gemma2:9b
-  # - ollama/gemma2:27b
-  # - ollama/llama3:70b
-  # - ollama/llama3.1:70b
-  # - ollama/mixtral:8x7b
-  # - ollama/llama3:8b
-  # - ollama/llama3.1:8b
+  # - gpt-4o-2024-08-06
 
 attack_types:
-  - combined_attack
+  # - combined_attack
   - context_ignoring
-  - fake_completion
-  - escape_characters
-  - naive
+  # - fake_completion
+  # - escape_characters
+  # - naive
 
-# defense_type: ob_sandwich_defense # delimiters_defense, ob_sandwich_defense, instructional_prevention
+# Defense selector. Comment out for the undefended baseline (confirm ASR > 0 first).
+#   progent  -- Progent privilege control: a per-task security policy allows only task-relevant
+#               tools and blocks every other call (incl. the injected attacker tool). Imported
+#               from the repo root (secagent). Works from this repo.
+#   camel    -- CaMeL code-gen + interpreter; injected observation text is untrusted data. Needs
+#               the CaMeL kernel (`src.camel`) from the camel-prompt-injection repo.
+defense_type: progent
+# Other ASB OPI defenses: delimiters_defense, ob_sandwich_defense, instructional_prevention
 # suffix: test
