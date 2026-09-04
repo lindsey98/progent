@@ -1,5 +1,6 @@
 import importlib
 import logging
+import os
 import warnings
 from itertools import repeat
 from multiprocessing import Pool
@@ -200,6 +201,13 @@ def show_results(suite_name: str, results: SuiteResults, show_security_results: 
     help="Whether to re-run tasks that have already been run.",
 )
 @click.option(
+    "--html",
+    "save_html",
+    is_flag=True,
+    help="Also save a rendered HTML trace next to each task JSON (none.json -> none.html), "
+    "including Progent's policy/policy-trace and blocked calls.",
+)
+@click.option(
     "--module-to-load",
     "-ml",
     "modules_to_load",
@@ -223,8 +231,13 @@ def main(
     system_message: str | None = None,
     max_workers: int = 1,
     force_rerun: bool = False,
+    save_html: bool = False,
     modules_to_load: tuple[str, ...] = (),
 ):
+    if save_html:
+        # Read by TraceLogger.save() to also emit <task>.html beside <task>.json.
+        os.environ["AGENTDOJO_SAVE_HTML"] = "1"
+
     for module in modules_to_load:
         importlib.import_module(module)
 

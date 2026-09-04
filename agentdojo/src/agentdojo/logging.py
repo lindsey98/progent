@@ -237,25 +237,42 @@ class TraceLogger(Logger):
         directory = f"{self.dirpath}/{pipeline_name}/{suite_name}/{user_task_id}/{attack_type}"
         if not os.path.exists(directory):
             os.makedirs(directory, exist_ok=True)
-        file = f"{directory}/{injection_task_id or 'none'}.json"
-        with open(file, "w") as f:
+        stem = f"{directory}/{injection_task_id or 'none'}"
+        payload = {
+            "suite_name": suite_name,
+            "pipeline_name": pipeline_name,
+            "user_task_id": user_task_id,
+            "injection_task_id": injection_task_id,
+            "attack_type": attack_type if attack_type != "none" else None,
+            "injections": injections,
+            "messages": self.messages,
+            "error": self.error,
+            **other_context,
+        }
+        with open(f"{stem}.json", "w") as f:
             f.write(
                 json.dumps(
-                    {
-                        "suite_name": suite_name,
-                        "pipeline_name": pipeline_name,
-                        "user_task_id": user_task_id,
-                        "injection_task_id": injection_task_id,
-                        "attack_type": attack_type if attack_type != "none" else None,
-                        "injections": injections,
-                        "messages": self.messages,
-                        "error": self.error,
-                        **other_context,
-                    },
+                    payload,
                     indent=4,
                     default=lambda o: o.model_dump() if isinstance(o, BaseModel) else o,
                 )
             )
+
+        # Optionally render a standalone HTML trace next to the JSON (none.json -> none.html).
+        # Enabled by the benchmark's --html flag, which sets AGENTDOJO_SAVE_HTML=1.
+        if os.getenv("AGENTDOJO_SAVE_HTML", "").lower() in ("1", "true"):
+            try:
+                from agentdojo.trace_html import render_trace_html
+
+                # Round-trip through the JSON encoder so the renderer sees plain dicts/lists
+                # (ChatMessage/pydantic objects become their model_dump form), matching the .json.
+                plain = json.loads(
+                    json.dumps(payload, default=lambda o: o.model_dump() if isinstance(o, BaseModel) else o)
+                )
+                with open(f"{stem}.html", "w") as f:
+                    f.write(render_trace_html(plain))
+            except Exception as e:  # never let rendering break a benchmark run
+                warnings.warn(f"Failed to render HTML trace for {stem}: {e}")
 
     def log_error(self, error: str):
         self.error = error
