@@ -133,6 +133,11 @@ def _parse_model_output(completion: str) -> ChatAssistantMessage:
     end_idx = completion.find(close_tag, start_idx)
     end_idx = end_idx if end_idx != -1 else len(completion)
     raw_json = completion[start_idx:end_idx].strip()
+    # A no-argument call is often emitted as `<function=name></function>` (empty body) instead of
+    # the prompted `<function=name>{}</function>`. Treat an empty body as an empty arg dict so the
+    # parameterless tool call is not silently dropped (which would end the loop with no action).
+    if raw_json == "":
+        raw_json = "{}"
 
     try:
         params_dict = json.loads(raw_json)
