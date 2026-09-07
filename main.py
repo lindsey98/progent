@@ -64,8 +64,9 @@ def main() -> int:
     if (args.user_tasks or args.injection_tasks) and len(args.suites) != 1:
         p.error("--user-task/--injection-task can only be used with a single --suites value.")
 
-    agentdojo_dir = Path(__file__).resolve().parent
-    repo_root = agentdojo_dir.parent
+    # This script lives at the progent repo root, next to the `secagent` package.
+    repo_root = Path(__file__).resolve().parent
+    run_cwd = repo_root
 
     # Base env: put the repo root on PYTHONPATH so `import secagent` resolves, and
     # mirror run.sh's Progent settings.
@@ -110,9 +111,9 @@ def main() -> int:
         print("       " + " ".join(cmd), flush=True)
 
         if args.max_workers == 1:
-            rc |= subprocess.run(cmd, env=env, cwd=agentdojo_dir).returncode
+            rc |= subprocess.run(cmd, env=env, cwd=run_cwd).returncode
         else:
-            procs.append((suite, subprocess.Popen(cmd, env=env, cwd=agentdojo_dir)))
+            procs.append((suite, subprocess.Popen(cmd, env=env, cwd=run_cwd)))
 
     for suite, proc in procs:
         code = proc.wait()

@@ -23,11 +23,12 @@ the experiment harnesses from the paper.
 from the repo root (`run.sh` puts it on `PYTHONPATH`). The benchmark *is* installed.
 
 ```bash
-pip install -r requirements.txt    # secagent deps (use a venv / conda env, Python >= 3.9)
-cd agentdojo && pip install -e .    # install the AgentDojo benchmark
+pip install -r requirements.txt          # secagent deps (use a venv / conda env, Python >= 3.9)
+pip install -e ./agentdojo               # install the AgentDojo benchmark
 ```
 
-Run via the unified `main.py` (one process per suite, with the right Progent env):
+Run via the unified `main.py` **from the repo root** (it sits next to `secagent`,
+and launches one benchmark process per suite with the right Progent env):
 
 ```bash
 # attacked run
