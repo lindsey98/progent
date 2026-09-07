@@ -8,13 +8,10 @@
     # no-attack (utility) run
     python main.py MODEL --suites banking slack travel workspace --defense progent
 
-MODEL is the served model id (positional). `--defense` is `none` (baseline) or
-`progent`. Output always goes under `logs/` (per-pipeline: logs/<model>[+progent]/...).
-
-Progent's tool wrapping is decided at suite-import time from SECAGENT_SUITE, so
-each suite must run in its own process with that env set (as run.sh did). This
-script launches one `agentdojo.scripts.benchmark` subprocess per suite with the
-right environment and forwards the shared flags.
+MODEL is the served model id (positional; a ModelsEnum value like `Qwen3.6-35B-A3B`
+or its enum name). `--defense` is `none` (baseline) or `progent` (passed to the
+benchmark as `--defense progent`). Output goes under `logs/`. This script launches
+one `agentdojo.scripts.benchmark` subprocess per suite and forwards the flags.
 """
 
 from __future__ import annotations
@@ -29,6 +26,31 @@ from pathlib import Path
 # "act without asking for confirmation" line). Applied automatically unless the
 # user passes --system-message-name.
 AGENTDYN_SUITES = {"shopping", "github", "dailylife"}
+
+
+def _resolve_model_name(model: str) -> str:
+    """Map a model id to the token the benchmark's --model expects.
+
+    agentdojo's --model is a click.Choice over ModelsEnum, matched by enum *name*
+    (e.g. QWEN_3_6_35B_LOCAL), while users usually pass the value (Qwen3.6-35B-A3B).
+    Accept either: pass an enum name through, else map a value to its unique name.
+    Unknown ids pass through so the benchmark reports the error itself.
+    """
+    try:
+        from agentdojo.models import ModelsEnum
+    except Exception:
+        return model
+    members = ModelsEnum.__members__
+    if model in members:
+        return model
+    by_value = [name for name, m in members.items() if str(m.value) == model]
+    if len(by_value) == 1:
+        return by_value[0]
+    if len(by_value) > 1:
+        print(f"[main] warning: {model!r} maps to several models {by_value}; using {by_value[0]}. "
+              f"Pass the enum name to disambiguate.", file=sys.stderr)
+        return by_value[0]
+    return model
 
 
 def main() -> int:
@@ -67,9 +89,11 @@ def main() -> int:
     # This script lives at the progent repo root, next to the `secagent` package.
     repo_root = Path(__file__).resolve().parent
     run_cwd = repo_root
+    model_name = _resolve_model_name(args.model)
 
     # Base env: put the repo root on PYTHONPATH so `import secagent` resolves, and
-    # mirror run.sh's Progent settings.
+    # set Progent's policy settings (secagent reads these). SECAGENT_POLICY_MODEL is
+    # the served model *value*, i.e. what secagent sends to the policy LLM.
     base_env = dict(os.environ)
     base_env["PYTHONPATH"] = f"{repo_root}{os.pathsep}{base_env.get('PYTHONPATH', '')}".rstrip(os.pathsep)
     base_env["COLUMNS"] = base_env.get("COLUMNS", "300")
@@ -78,13 +102,15 @@ def main() -> int:
         base_env["SECAGENT_POLICY_MODEL"] = args.model
         base_env.setdefault("SECAGENT_UPDATE", "True")
         base_env.setdefault("SECAGENT_IGNORE_UPDATE_ERROR", "True")
-    else:
-        base_env["SECAGENT_GENERATE"] = "False"
 
     if args.html:
         base_env["AGENTDOJO_SAVE_HTML"] = "1"
 
-    common = ["--model", args.model, "--logdir", args.logdir]
+    # The benchmark's --defense is a Choice over the defense list (no "none"); omit
+    # it for the baseline. Progent is `--defense progent`.
+    common = ["--model", model_name, "--logdir", args.logdir]
+    if args.defense == "progent":
+        common += ["--defense", "progent"]
     if args.run_attack:
         common += ["--attack", args.attack]
     if args.force_rerun:
@@ -100,7 +126,6 @@ def main() -> int:
     rc = 0
     for suite in args.suites:
         env = dict(base_env)
-        env["SECAGENT_SUITE"] = suite
         cmd = [sys.executable, "-m", "agentdojo.scripts.benchmark", "-s", suite, *common]
         sysmsg = args.system_message_name or ("agentdyn" if suite in AGENTDYN_SUITES else None)
         if sysmsg:

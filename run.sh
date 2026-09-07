@@ -20,4 +20,4 @@ python main.py "$MODEL" --suites $SUITES --defense "$DEFENSE" --run-attack --att
 echo "all done"
 
 # Print utility/security for both passes.
-python print_results.py --model "$MODEL" --log-dir logs --suites $SUITES
+python print_results.py --model "$MODEL" --defense "$DEFENSE" --attack "$ATTACK" --log-dir logs --suites $SUITES

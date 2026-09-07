@@ -7,12 +7,13 @@ import os
 DEFAULT_SUITES = ["github", "shopping", "dailylife"]
 
 
-def run_dir_name(model: str) -> str:
-    """Mirror agentdojo's make_run_name: basename + '+progent' when Progent is on."""
-    name = model.split("/")[-1]
-    if os.getenv("SECAGENT_GENERATE", "True").lower() == "true":
-        name += "+progent"
-    return name
+def run_dir_name(model: str, defense: str = "progent") -> str:
+    """Per-run log directory name: `<model>+<defense>` (e.g. `<model>+progent`),
+    or `<model>` for the baseline. Uses the `+` convention."""
+    base = model.split("/")[-1]
+    if defense and defense != "none":
+        return f"{base}+{defense}"
+    return base
 
 
 def summarize(log_dir: str, name: str, attack, suites):
@@ -65,14 +66,18 @@ if __name__ == "__main__":
     parser.add_argument("--model", default="Qwen3.6-35B-A3B",
                         help="Model id; basename and the +progent suffix are applied automatically.")
     parser.add_argument("--name", default=None,
-                        help="Exact run-directory name under --log-dir (overrides --model).")
+                        help="Exact run-directory name under --log-dir (overrides --model/--defense).")
+    parser.add_argument("--defense", default="progent",
+                        help="Defense name in the run dir `<model>+<defense>`; 'none' for baseline.")
+    parser.add_argument("--attack", default="important_instructions",
+                        help="Attack name to summarize the under-attack pass for.")
     parser.add_argument("--log-dir", default="logs")
     parser.add_argument("--suites", nargs="+", default=DEFAULT_SUITES,
                         help="Suites to summarize (e.g. shopping github dailylife for AgentDyn).")
     args = parser.parse_args()
 
-    name = args.name or run_dir_name(args.model)
+    name = args.name or run_dir_name(args.model, args.defense)
     print(f"Results for: {name}")
     # No-attack (utility) and under-attack (utility + security).
-    for attack, title in [(None, "No attack"), ("important_instructions", "Attack: important_instructions")]:
+    for attack, title in [(None, "No attack"), (args.attack, f"Attack: {args.attack}")]:
         print_table(title, summarize(args.log_dir, name, attack, args.suites))
