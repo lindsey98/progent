@@ -33,16 +33,16 @@ and launches one benchmark process per suite with the right Progent env):
 ```bash
 # attacked run
 python main.py MODEL --run-attack --attack important_instructions \
-    --suites banking slack travel workspace --defense progent
+    --suite banking slack travel workspace --defense progent
 
 # no-attack (utility) run
-python main.py MODEL --suites banking slack travel workspace --defense progent
+python main.py MODEL --suite banking slack travel workspace --defense progent
 ```
 
 | arg | meaning |
 | --- | --- |
 | `MODEL` (positional) | served model id, e.g. `Qwen3.6-35B-A3B` or `gpt-4o-2024-08-06` |
-| `--suites` | space-separated suite list |
+| `--suite` | space-separated suite list |
 | `--defense` | `none` (baseline) or `progent` |
 | `--run-attack` / `--attack` | run the attack pass; name defaults to `important_instructions` (omit `--run-attack` for the utility pass) |
 | `--force_rerun`, `--html` | optional: recompute cached tasks / also save a `<task>.html` next to each `<task>.json` |
@@ -58,10 +58,10 @@ via env). Set the relevant API key first (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`,
 The [AgentDyn](https://github.com/SaFo-Lab/AgentDyn) dynamic suites are merged
 into `agentdojo/src/agentdojo` — no extra install; their tools are
 privilege-controlled by Progent exactly like the original suites (allowlists
-follow AgentDyn's official Progent integration). Just name them in `--suites`:
+follow AgentDyn's official Progent integration). Just name them in `--suite`:
 
 ```bash
-python main.py MODEL --suites shopping github dailylife --defense progent
+python main.py MODEL --suite shopping github dailylife --defense progent
 ```
 
 `main.py` automatically passes `--system-message-name agentdyn` for these three
@@ -81,7 +81,7 @@ as extra `--attack` options in AgentDojo:
 | `chat_inject_{qwen3,glm}_with_utility_authority_endorsement_system_multiturn_7` | Same, in the authority-endorsement persuasion style. |
 
 ```bash
-python main.py MODEL --run-attack --attack chat_inject_qwen3 --suites banking --defense progent
+python main.py MODEL --run-attack --attack chat_inject_qwen3 --suite banking --defense progent
 ```
 
 The multi-turn variants read pre-generated dialogues from

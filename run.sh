@@ -14,10 +14,10 @@ EXTRA_ARGS="${EXTRA_ARGS:-}"                  # e.g. --html --force_rerun
 # No-attack (utility) pass, then the attacked pass. main.py runs one process per
 # suite with the right SECAGENT_* env; the AgentDyn suites get --system-message-name
 # agentdyn automatically. Output goes under logs/<model>[+progent]/...
-python main.py "$MODEL" --suites $SUITES --defense "$DEFENSE" $EXTRA_ARGS
-python main.py "$MODEL" --suites $SUITES --defense "$DEFENSE" --run-attack --attack "$ATTACK" $EXTRA_ARGS
+python main.py "$MODEL" --suite $SUITES --defense "$DEFENSE" $EXTRA_ARGS
+python main.py "$MODEL" --suite $SUITES --defense "$DEFENSE" --run-attack --attack "$ATTACK" $EXTRA_ARGS
 
 echo "all done"
 
 # Print utility/security for both passes.
-python print_results.py --model "$MODEL" --defense "$DEFENSE" --attack "$ATTACK" --log-dir logs --suites $SUITES
+python print_results.py --model "$MODEL" --defense "$DEFENSE" --attack "$ATTACK" --log-dir logs --suite $SUITES

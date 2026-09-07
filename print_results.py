@@ -3,8 +3,8 @@ import glob
 import json
 import os
 
-# DEFAULT_SUITES = ["banking", "slack", "travel", "workspace", "github", "shopping", "dailylife"]
-DEFAULT_SUITES = ["github", "shopping", "dailylife"]
+DEFAULT_SUITES = ["banking", "slack", "travel", "workspace"]
+# DEFAULT_SUITES = ["github", "shopping", "dailylife"]
 
 
 def run_dir_name(model: str, defense: str = "progent") -> str:
@@ -12,7 +12,7 @@ def run_dir_name(model: str, defense: str = "progent") -> str:
     or `<model>` for the baseline. Uses the `+` convention."""
     base = model.split("/")[-1]
     if defense and defense != "none":
-        return f"{base}+{defense}"
+        return f"{base}-{defense}"
     return base
 
 
@@ -69,10 +69,10 @@ if __name__ == "__main__":
                         help="Exact run-directory name under --log-dir (overrides --model/--defense).")
     parser.add_argument("--defense", default="progent",
                         help="Defense name in the run dir `<model>+<defense>`; 'none' for baseline.")
-    parser.add_argument("--attack", default="important_instructions",
+    parser.add_argument("--attack", default="data_only_syntactic",
                         help="Attack name to summarize the under-attack pass for.")
-    parser.add_argument("--log-dir", default="logs")
-    parser.add_argument("--suites", nargs="+", default=DEFAULT_SUITES,
+    parser.add_argument("--log-dir", default="logs/")
+    parser.add_argument("--suite", dest="suites", nargs="+", default=DEFAULT_SUITES,
                         help="Suites to summarize (e.g. shopping github dailylife for AgentDyn).")
     args = parser.parse_args()
 

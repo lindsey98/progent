@@ -3,10 +3,10 @@
 
     # attacked run
     python main.py MODEL --run-attack --attack important_instructions \
-        --suites banking slack travel workspace --defense progent
+        --suite banking slack travel workspace --defense progent
 
     # no-attack (utility) run
-    python main.py MODEL --suites banking slack travel workspace --defense progent
+    python main.py MODEL --suite banking slack travel workspace --defense progent
 
 MODEL is the served model id (positional; a ModelsEnum value like `Qwen3.6-35B-A3B`
 or its enum name). `--defense` is `none` (baseline) or `progent` (passed to the
@@ -59,8 +59,8 @@ def main() -> int:
         description="Run the AgentDojo + Progent benchmark (one subprocess per suite).",
     )
     p.add_argument("model", help="Served model id, e.g. Qwen3.6-35B-A3B or gpt-4o-2024-08-06.")
-    p.add_argument("--suites", nargs="+", required=True, metavar="SUITE",
-                   help="Suites to run, space-separated (e.g. banking slack travel workspace).")
+    p.add_argument("--suite", dest="suites", nargs="+", required=True, metavar="SUITE",
+                   help="Suite(s) to run, space-separated (e.g. banking slack travel workspace).")
     p.add_argument("--defense", choices=["none", "progent"], default="none",
                    help="none = plain baseline; progent = Progent privilege control. Default none.")
     p.add_argument("--run-attack", action="store_true",
@@ -84,7 +84,7 @@ def main() -> int:
     args = p.parse_args()
 
     if (args.user_tasks or args.injection_tasks) and len(args.suites) != 1:
-        p.error("--user-task/--injection-task can only be used with a single --suites value.")
+        p.error("--user-task/--injection-task can only be used with a single --suite value.")
 
     # This script lives at the progent repo root, next to the `secagent` package.
     repo_root = Path(__file__).resolve().parent
