@@ -25,29 +25,47 @@ from the repo root (`run.sh` puts it on `PYTHONPATH`). The benchmark *is* instal
 ```bash
 pip install -r requirements.txt    # secagent deps (use a venv / conda env, Python >= 3.9)
 cd agentdojo && pip install -e .    # install the AgentDojo benchmark
-./run.sh                            # edit the `model` line to pick a model; prints results at the end
 ```
 
-`run.sh` runs all four suites with/without the `important_instructions` attack,
-using one model for both the agent and Progent's policy. Set the relevant API key
-first (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `CO_API_KEY`, `GCP_PROJECT`/`GCP_LOCATION`).
+Run via the unified `main.py` (one process per suite, with the right Progent env):
+
+```bash
+# attacked run
+python main.py MODEL --run-attack --attack important_instructions \
+    --suites banking slack travel workspace --defense progent
+
+# no-attack (utility) run
+python main.py MODEL --suites banking slack travel workspace --defense progent
+```
+
+| arg | meaning |
+| --- | --- |
+| `MODEL` (positional) | served model id, e.g. `Qwen3.6-35B-A3B` or `gpt-4o-2024-08-06` |
+| `--suites` | space-separated suite list |
+| `--defense` | `none` (baseline) or `progent` |
+| `--run-attack` / `--attack` | run the attack pass; name defaults to `important_instructions` (omit `--run-attack` for the utility pass) |
+| `--force_rerun`, `--html` | optional: recompute cached tasks / also save a `<task>.html` next to each `<task>.json` |
+| `--user-task`/`-ut`, `--injection-task`/`-it` | restrict to given task ids (single suite only) |
+
+Output always goes under `logs/<model>[+progent]/...`. `./run.sh` is a batch
+wrapper that runs both passes over all suites (override `MODEL`/`SUITES`/`DEFENSE`
+via env). Set the relevant API key first (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`,
+`CO_API_KEY`, `GCP_PROJECT`/`GCP_LOCATION`).
 
 ## AgentDyn Suites (shopping / github / dailylife)
 
 The [AgentDyn](https://github.com/SaFo-Lab/AgentDyn) dynamic suites are merged
-into `agentdojo/src/agentdojo` — no extra install; the same CLI arguments and
-`SECAGENT_*` variables apply, and their tools are privilege-controlled by
-Progent exactly like the original suites (allowlists follow AgentDyn's official
-Progent integration). Run them by overriding the suite list:
+into `agentdojo/src/agentdojo` — no extra install; their tools are
+privilege-controlled by Progent exactly like the original suites (allowlists
+follow AgentDyn's official Progent integration). Just name them in `--suites`:
 
 ```bash
-cd agentdojo
-SUITES="shopping github dailylife" EXTRA_ARGS="--system-message-name agentdyn" ./run.sh
+python main.py MODEL --suites shopping github dailylife --defense progent
 ```
 
-`--system-message-name agentdyn` selects AgentDyn's system message (it appends a
-"complete tasks without asking for confirmation" line); omit it to keep the
-AgentDojo default.
+`main.py` automatically passes `--system-message-name agentdyn` for these three
+suites (AgentDyn's system message adds a "act without asking for confirmation"
+line); pass `--system-message-name` yourself to override it.
 
 ## ChatInject Attack
 
@@ -62,8 +80,7 @@ as extra `--attack` options in AgentDojo:
 | `chat_inject_{qwen3,glm}_with_utility_authority_endorsement_system_multiturn_7` | Same, in the authority-endorsement persuasion style. |
 
 ```bash
-cd agentdojo
-python -m agentdojo.scripts.benchmark -s banking --model "$model" --attack chat_inject_qwen3
+python main.py MODEL --run-attack --attack chat_inject_qwen3 --suites banking --defense progent
 ```
 
 The multi-turn variants read pre-generated dialogues from
@@ -94,7 +111,7 @@ Privilege control is **on by default**; `run.sh` shows typical values.
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `SECAGENT_GENERATE` | `True` | Generate a per-task policy. `False` = plain baseline. |
-| `SECAGENT_UPDATE` | `False` | Update the policy during a task. `run.sh` sets `True` (the benchmark gate defaults off). |
+| `SECAGENT_UPDATE` | `False` | Update the policy during a task. `main.py` sets `True` for `--defense progent` runs (the benchmark gate defaults off). |
 | `SECAGENT_POLICY_MODEL` | `gpt-4o-2024-08-06` | Model used to generate/update the policy. |
 | `LOCAL_BASE_URL` / `SECAGENT_POLICY_BASE_URL` | `localhost:8000` | Local agent / policy endpoints. |
 

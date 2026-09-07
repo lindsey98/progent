@@ -1,36 +1,23 @@
 #!/bin/bash
-export PYTHONPATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd):$PYTHONPATH"
+# Batch runner: no-attack + important_instructions passes over the chosen suites,
+# via the unified main.py entry point. Override MODEL / SUITES / DEFENSE / ATTACK
+# with env vars, e.g.  MODEL=gpt-4o-2024-08-06 DEFENSE=none ./run.sh
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")"
 
-log_dir="logs"
-mkdir -p $log_dir
-export COLUMNS=300
+MODEL="${MODEL:-Qwen3.6-35B-A3B}"
+DEFENSE="${DEFENSE:-progent}"                 # none | progent
+ATTACK="${ATTACK:-important_instructions}"
+SUITES="${SUITES:-banking slack travel workspace shopping github dailylife}"
+EXTRA_ARGS="${EXTRA_ARGS:-}"                  # e.g. --html --force_rerun
 
-#model="Qwen3-30B-A3B-Instruct-2507"
- model="Qwen3.6-35B-A3B"
-# model="gpt-4o-2024-08-06"
-# model="meta-llama/Llama-3.3-70B-Instruct"
-
-export SECAGENT_POLICY_MODEL="$model"
-
-# Progent privilege control (SECAGENT_GENERATE) is ON by default -> logs go to
-# logs/<model>+progent/... Set SECAGENT_GENERATE=False for a plain baseline.
-# Policy auto-update must be enabled explicitly: the benchmark's update gate
-# (agent_pipeline/tool_execution.py) defaults to off.
-export SECAGENT_UPDATE="True"
-export SECAGENT_IGNORE_UPDATE_ERROR="True"
-
-# AgentDojo suites (default). For the AgentDyn dynamic suites use:
-#   suites="shopping github dailylife"; extra_args="--system-message-name agentdyn"
-suites="${SUITES:-banking slack travel workspace shopping github dailylife}"
-extra_args="${EXTRA_ARGS:-}"
-
-for suite in $suites; do
-    SECAGENT_SUITE=$suite python -m agentdojo.scripts.benchmark -s $suite --model "$model" $extra_args --logdir $log_dir &
-    SECAGENT_SUITE=$suite python -m agentdojo.scripts.benchmark -s $suite --model "$model" $extra_args --attack important_instructions --logdir $log_dir &
-done
-wait
+# No-attack (utility) pass, then the attacked pass. main.py runs one process per
+# suite with the right SECAGENT_* env; the AgentDyn suites get --system-message-name
+# agentdyn automatically. Output goes under logs/<model>[+progent]/...
+python main.py "$MODEL" --suites $SUITES --defense "$DEFENSE" $EXTRA_ARGS
+python main.py "$MODEL" --suites $SUITES --defense "$DEFENSE" --run-attack --attack "$ATTACK" $EXTRA_ARGS
 
 echo "all done"
 
-# Print utility/security for both the no-attack and important_instructions runs.
-python print_results.py --model "$model" --log-dir "$log_dir" --suites $suites
+# Print utility/security for both passes.
+python print_results.py --model "$MODEL" --log-dir logs --suites $SUITES
