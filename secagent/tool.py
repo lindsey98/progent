@@ -202,7 +202,11 @@ def api_request(sys_prompt, user_prompt, temperature=0.0) -> None:
         # print("[Policy] tokens (completion, prompt): ", message.usage.output_tokens, message.usage.input_tokens,
         #       "total (completion, prompt): ", total_completion_tokens, total_prompt_tokens, file=sys.stderr)
         return message.content[0].text
-    if policy_model.startswith("gemini"):
+    # Gemini normally goes through Vertex AI (needs a GCP project, ignores base_url).
+    # If an OpenAI-compatible endpoint is configured via SECAGENT_POLICY_BASE_URL
+    # (e.g. a proxy serving gemini), skip Vertex and route gemini through the OpenAI
+    # client below instead.
+    if policy_model.startswith("gemini") and not os.getenv("SECAGENT_POLICY_BASE_URL"):
         import vertexai.generative_models as genai
         vertexai_model = genai.GenerativeModel(
             model_name=policy_model,
@@ -219,13 +223,25 @@ def api_request(sys_prompt, user_prompt, temperature=0.0) -> None:
     from openai import OpenAI
     # Locally served models (Qwen3-..., Llama-3.3-..., meta-llama/*, Qwen/*, ...)
     # use an OpenAI-compatible local server; hosted OpenAI models use the API.
-    if is_local_policy_model():
+    # SECAGENT_POLICY_BASE_URL also forces the OpenAI-compatible client for an
+    # otherwise-hosted name (e.g. gemini-*/gpt-* served by a proxy like zctotoken).
+    if is_local_policy_model() or os.getenv("SECAGENT_POLICY_BASE_URL"):
         client = OpenAI(
             base_url=os.getenv("SECAGENT_POLICY_BASE_URL", "http://127.0.0.1:8000/v1"),
             api_key=os.getenv("SECAGENT_POLICY_API_KEY", "EMPTY"),
         )
     else:
         client = OpenAI()
+    # Provider-specific knobs passed straight through to the endpoint, e.g. to stop
+    # Gemini-2.5 spuriously entering function-calling (MALFORMED_FUNCTION_CALL) by
+    # disabling thinking. Set SECAGENT_POLICY_EXTRA_BODY to a JSON object; unset = no-op.
+    extra_body = None
+    _eb = os.getenv("SECAGENT_POLICY_EXTRA_BODY")
+    if _eb:
+        try:
+            extra_body = json.loads(_eb)
+        except json.JSONDecodeError as _e:
+            print(f"[Policy] ignoring malformed SECAGENT_POLICY_EXTRA_BODY: {_e}", file=sys.stderr)
     if policy_model.startswith("o1") or policy_model.startswith("o3"):
         chat_completion = client.chat.completions.create(
             messages=[
@@ -240,6 +256,7 @@ def api_request(sys_prompt, user_prompt, temperature=0.0) -> None:
             ],
             model=policy_model,
             seed=0,
+            extra_body=extra_body,
         )
     if policy_model.startswith("vertex_ai/"):
         chat_completion = client.chat.completions.create(
@@ -255,6 +272,7 @@ def api_request(sys_prompt, user_prompt, temperature=0.0) -> None:
             ],
             model=policy_model,
             temperature=temperature,
+            extra_body=extra_body,
         )
     else:
         chat_completion = client.chat.completions.create(
@@ -271,6 +289,7 @@ def api_request(sys_prompt, user_prompt, temperature=0.0) -> None:
             model=policy_model,
             temperature=temperature,
             seed=0,
+            extra_body=extra_body,
         )
     # print(chat_completion)
     # total_completion_tokens += chat_completion.usage.completion_tokens
